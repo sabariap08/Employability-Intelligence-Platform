@@ -1,0 +1,90 @@
+/* Employability Intelligence Platform — Sunrise theme */
+:root{
+  --sun:#FFC928; --gold:#FFE08A; --white:#fff; --cream:#FFF9E8; --ink:#252525; --amber:#F4A900; --line:#EAE5D8;
+  --muted:#5f5a4c;
+  --grad:linear-gradient(135deg,var(--sun),var(--amber));
+  --r-sm:10px; --r-md:16px; --r-lg:28px;
+  --sp-1:.5rem; --sp-2:1rem; --sp-3:1.5rem; --sp-4:2.5rem; --sp-5:4.5rem;
+  --shadow:0 10px 30px -12px rgba(244,169,0,.35);
+  --glow:0 8px 24px -6px rgba(244,169,0,.55);
+  --font:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font);color:var(--ink);background:var(--white);line-height:1.65;font-size:clamp(1rem,.95rem + .25vw,1.125rem);overflow-x:hidden}
+h1,h2,h3{line-height:1.15;margin:0 0 var(--sp-2);letter-spacing:-.02em}
+h1{font-size:clamp(1.25rem,1rem + 1.2vw,1.6rem);font-weight:800}
+h2{font-size:clamp(1.25rem,1.05rem + 1vw,1.6rem);font-weight:700}
+h3{font-size:clamp(2rem,1.2rem + 4vw,3.5rem);font-weight:800}
+p{margin:0 0 var(--sp-2);color:var(--muted);max-width:68ch}
+
+/* Buttons */
+input[type=button],input[type=submit]{
+  font:inherit;font-weight:700;color:var(--ink);background:var(--grad);border:0;cursor:pointer;
+  padding:.75rem 1.6rem;border-radius:999px;min-height:44px;box-shadow:var(--glow);
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease}
+input[type=button]:hover,input[type=submit]:hover{transform:translateY(-2px);box-shadow:0 12px 30px -6px rgba(244,169,0,.7);filter:saturate(1.1)}
+input[type=button]:active,input[type=submit]:active{transform:translateY(0) scale(.98)}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:6px}
+a{color:#8a5d00;font-weight:600;text-underline-offset:3px}
+a:hover{color:var(--ink)}
+
+/* Home: header */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-2);flex-wrap:wrap;
+  padding:var(--sp-2) clamp(1rem,5vw,4rem);background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.topbar h1{margin:0;display:flex;align-items:center;gap:.6rem}
+.topbar h1::before{content:"";width:1.1rem;height:1.1rem;border-radius:50%;background:var(--grad);box-shadow:0 0 0 5px var(--gold)}
+
+/* Home: hero — the sun rises once on load */
+.hero{position:relative;overflow:hidden;text-align:center;padding:clamp(3rem,10vw,7rem) clamp(1rem,5vw,4rem) clamp(7rem,16vw,11rem);
+  background:linear-gradient(180deg,var(--white) 0%,var(--cream) 55%,var(--gold) 140%)}
+.hero::before{content:"";position:absolute;left:50%;bottom:0;width:min(90vw,640px);aspect-ratio:2/1;
+  border-radius:640px 640px 0 0;transform:translate(-50%,100%);
+  background:radial-gradient(circle at 50% 100%,var(--sun) 0 38%,rgba(255,201,40,.35) 39% 62%,rgba(255,201,40,0) 63%);
+  animation:rise 1.8s cubic-bezier(.2,.8,.2,1) .2s forwards}
+@keyframes rise{to{transform:translate(-50%,0)}}
+.hero>*{position:relative;z-index:1;margin-left:auto;margin-right:auto}
+.hero p{max-width:60ch;color:var(--ink);margin-bottom:var(--sp-3)}
+
+/* Home: content */
+main{padding:var(--sp-5) clamp(1rem,5vw,4rem);background:var(--cream)}
+.intro{max-width:760px;margin:0 auto var(--sp-4);text-align:center}
+.intro p{margin-inline:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:var(--sp-3);max-width:1160px;margin:0 auto}
+.card{background:var(--white);border:1px solid var(--line);border-top:4px solid var(--sun);border-radius:var(--r-md);padding:var(--sp-3);
+  box-shadow:0 2px 6px rgba(37,37,37,.04);transition:transform .25s ease,box-shadow .25s ease}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.card p{margin:0}
+.closing{margin:var(--sp-5) auto 0;max-width:900px;text-align:center;padding:var(--sp-4) var(--sp-3);border-radius:var(--r-lg);background:var(--grad);color:var(--ink)}
+.closing h2{margin-bottom:var(--sp-1)}
+.closing p{color:var(--ink);margin:0 auto var(--sp-2)}
+.tagline{text-align:center;padding:var(--sp-4) var(--sp-2);margin:0;background:var(--white);border-top:1px solid var(--line)}
+
+/* Login */
+.login-page{min-height:100vh;display:grid;place-items:center;padding:var(--sp-3) var(--sp-2);
+  background:linear-gradient(180deg,var(--white),var(--cream) 60%,var(--gold) 160%)}
+.login-wrap{width:min(100%,460px)}
+.login-wrap h1{text-align:center;margin-bottom:var(--sp-3);font-size:clamp(1.4rem,1.1rem + 1.5vw,2rem)}
+form{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:clamp(1.25rem,5vw,2.25rem);box-shadow:var(--shadow);
+  display:grid;gap:var(--sp-3);animation:enter .7s ease both}
+@keyframes enter{from{opacity:0;transform:translateY(16px)}}
+form>div{display:flex;flex-direction:column;gap:.35rem}
+form p{margin:0;font-weight:600;color:var(--ink);font-size:.95rem}
+input[type=email],input[type=password]{font:inherit;width:100%;min-height:48px;padding:.7rem 1rem;color:var(--ink);background:var(--cream);
+  border:1.5px solid var(--line);border-radius:var(--r-sm);transition:border-color .2s,box-shadow .2s,background .2s}
+input[type=email]:focus,input[type=password]:focus{outline:0;background:var(--white);border-color:var(--amber);box-shadow:0 0 0 4px rgba(255,201,40,.35)}
+form>div:last-child{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-2)}
+
+@media (max-width:600px){
+  .topbar{justify-content:center;text-align:center}
+  .hero .btn-hero{width:100%}
+  input[type=button],input[type=submit]{width:auto}
+  form>div:last-child{flex-direction:column;align-items:stretch;text-align:center}
+  form>div:last-child input{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+  .hero::before{transform:translate(-50%,0)}
+}

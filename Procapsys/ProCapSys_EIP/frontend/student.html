@@ -1,0 +1,2927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Dashboard — ProCapSys</title>
+<meta name="description" content="Student dashboard for ProCapSys — assessments, cohort, workshops, progress and placement readiness.">
+
+<!-- ============================================================
+     FONTS — identical to Login / homepage design system
+============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   0. DESIGN TOKENS — copied verbatim from Login page.
+   Do not fork these values — every dashboard shares this file.
+============================================================ */
+:root{
+  --ink:#101B33;
+  --ink-soft:#33436A;
+  --paper:#FFFDF9;
+  --paper-raised:#FFFFFF;
+  --line:#ECE3D3;
+  --amber:#F59E0B;
+  --amber-dark:#C2670A;
+  --amber2:#FB923C;
+  --teal:#1F9E93;
+  --teal-dark:#146F67;
+  --rose:#E4573D;
+  --text:#171B24;
+  --text-soft:#5B6070;
+  --radius-sm:10px;
+  --radius-md:18px;
+  --radius-lg:32px;
+  --shadow-sm: 0 2px 10px rgba(194,103,10,0.07);
+  --shadow-md: 0 14px 36px rgba(194,103,10,0.11);
+  --shadow-lg: 0 28px 70px rgba(194,103,10,0.17);
+  --font-display:'Fraunces', serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+  --maxw:1280px;
+  --transition: 0.35s cubic-bezier(.22,1,.36,1);
+  --sidebar-w: 264px;
+  --topbar-h: 68px;
+}
+
+[data-theme="dark"]{
+  --ink:#EDEBE3;
+  --ink-soft:#B9BFCF;
+  --paper:#0D1220;
+  --paper-raised:#161C2E;
+  --line:#2A3352;
+  --text:#EDEBE3;
+  --text-soft:#9BA0B4;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.35);
+  --shadow-md: 0 12px 32px rgba(0,0,0,0.45);
+  --shadow-lg: 0 24px 64px rgba(0,0,0,0.55);
+}
+
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  font-family:var(--font-body);
+  background:var(--paper);
+  color:var(--text);
+  line-height:1.6;
+  transition: background var(--transition), color var(--transition);
+  overflow-x:hidden;
+  min-height:100vh;
+}
+img{ max-width:100%; display:block; }
+a{ color:inherit; text-decoration:none; }
+ul{ list-style:none; }
+button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+input,select,textarea{ font-family:inherit; }
+h1,h2,h3,h4{ font-family:var(--font-display); font-weight:600; line-height:1.15; letter-spacing:-0.01em; }
+::selection{ background:var(--amber); color:var(--ink); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible{
+  outline:2px solid var(--amber-dark); outline-offset:3px; border-radius:4px;
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+}
+.eyebrow{
+  font-family:var(--font-mono); font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--teal-dark); display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; font-weight:600;
+}
+[data-theme="dark"] .eyebrow{ color:var(--teal); }
+.eyebrow::before{ content:''; width:16px; height:1px; background:var(--teal-dark); }
+[data-theme="dark"] .eyebrow::before{ background:var(--teal); }
+
+/* ============================================================
+   1. LOADER — identical to Login
+============================================================ */
+#loader{
+  position:fixed; inset:0; background:var(--ink); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+[data-theme="dark"] #loader{ background:var(--paper); }
+#loader.hidden{ opacity:0; visibility:hidden; }
+.loader-mark{
+  width:52px; height:52px; border-radius:50%;
+  border:2px solid rgba(246,245,241,0.2); border-top-color:var(--amber);
+  animation: spin 0.9s linear infinite;
+}
+.loader-text{ font-family:var(--font-mono); font-size:12px; letter-spacing:0.16em; color:#F6F5F1; text-transform:uppercase; }
+[data-theme="dark"] .loader-text{ color:var(--ink); }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* ============================================================
+   2. APP SHELL — sidebar + topbar + content
+============================================================ */
+.app-shell{ display:flex; min-height:100vh; }
+
+.sidebar{
+  width:var(--sidebar-w); flex-shrink:0; background:var(--paper-raised);
+  border-right:1px solid var(--line); position:fixed; top:0; bottom:0; left:0; z-index:120;
+  display:flex; flex-direction:column; transition: transform var(--transition);
+}
+.sidebar-brand{
+  padding:20px 22px; display:flex; align-items:center; gap:10px;
+  font-family:var(--font-display); font-weight:700; font-size:16.5px; border-bottom:1px solid var(--line);
+  white-space:nowrap; overflow:hidden;
+}
+.sidebar-brand span:last-child{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.sidebar-brand img.brand-logo{ height:110px; width:auto; flex-shrink:0; object-fit:contain; background:#fff; border-radius:14px; padding:14px 18px; border:1px solid var(--line); box-shadow:0 10px 26px -14px rgba(30,26,20,0.3); }
+.brand-mark{
+  width:34px; height:34px; border-radius:9px; flex-shrink:0; background:linear-gradient(135deg, var(--amber), var(--amber2));
+  display:flex; align-items:center; justify-content:center; color:#171015; font-weight:800; font-size:15px; font-family:var(--font-mono);
+  box-shadow: var(--shadow-sm);
+}
+.sidebar-nav{ flex:1; overflow-y:auto; padding:14px 12px; }
+.sidebar-nav::-webkit-scrollbar{ width:5px; }
+.sidebar-nav::-webkit-scrollbar-thumb{ background:var(--line); border-radius:10px; }
+.nav-group-label{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--text-soft); padding:16px 12px 6px; opacity:0.75;
+}
+.nav-item{
+  display:flex; align-items:center; gap:12px; padding:10.5px 14px; border-radius:var(--radius-sm);
+  font-size:13.8px; font-weight:500; color:var(--text-soft); cursor:pointer;
+  transition: background var(--transition), color var(--transition); margin-bottom:2px; position:relative;
+}
+.nav-item:hover{ background:var(--paper); color:var(--text); }
+.nav-item.active{
+  background:linear-gradient(135deg, rgba(245,158,11,.16), rgba(251,146,60,.13));
+  color:var(--ink); font-weight:600;
+}
+[data-theme="dark"] .nav-item.active{ color:var(--text); }
+.nav-icon{ width:18px; text-align:center; flex-shrink:0; font-size:15px; }
+.nav-item-badge{
+  margin-left:auto; background:var(--rose); color:#fff; font-size:10px; font-weight:700;
+  padding:2px 6px; border-radius:100px; font-family:var(--font-mono);
+}
+.sidebar-footer{ padding:14px; border-top:1px solid var(--line); }
+.sidebar-user{ display:flex; align-items:center; gap:10px; padding:8px; border-radius:var(--radius-sm); cursor:pointer; transition:background var(--transition); }
+.sidebar-user:hover{ background:var(--paper); }
+.sidebar-avatar{
+  width:36px; height:36px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg, var(--amber), var(--amber2)); background-size:cover; background-position:center; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px;
+}
+.sidebar-user-info{ overflow:hidden; }
+.sidebar-user-name{ font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sidebar-user-role{ font-size:11px; color:var(--text-soft); }
+
+.main-wrap{ flex:1; margin-left:var(--sidebar-w); display:flex; flex-direction:column; min-height:100vh; }
+
+.topbar{
+  position:sticky; top:0; z-index:100; display:flex; align-items:center; gap:16px;
+  padding:0 26px; height:var(--topbar-h); background:rgba(246,245,241,0.78);
+  backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+  border-bottom:1px solid var(--line);
+}
+[data-theme="dark"] .topbar{ background:rgba(13,18,32,0.78); }
+.hamburger{
+  display:none; width:38px; height:38px; border-radius:var(--radius-sm); border:1px solid var(--line);
+  align-items:center; justify-content:center; font-size:16px; flex-shrink:0; background:var(--paper-raised);
+}
+.page-title-block{ flex:1; min-width:0; }
+.page-title-block h1{ font-size:19px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.page-title-block .breadcrumb{ font-size:12px; color:var(--text-soft); font-family:var(--font-mono); }
+.topbar-search{ position:relative; flex:0 1 320px; display:none; }
+.topbar-search input{
+  width:100%; padding:9px 14px 9px 36px; border-radius:100px; border:1.5px solid var(--line);
+  background:var(--paper-raised); font-size:13.5px; color:var(--text); transition:border-color var(--transition), box-shadow var(--transition);
+}
+.topbar-search input:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 4px rgba(31,158,147,0.14); }
+.topbar-search-icon{ position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--text-soft); font-size:13px; }
+.topbar-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.icon-btn{
+  width:38px; height:38px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+  transition: transform var(--transition), background var(--transition); background:var(--paper-raised); position:relative; font-size:15px; flex-shrink:0;
+}
+.icon-btn:hover{ transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+.icon-dot{
+  position:absolute; top:6px; right:7px; width:8px; height:8px; border-radius:50%; background:var(--rose); border:1.5px solid var(--paper-raised);
+}
+.topbar-profile{ display:flex; align-items:center; gap:9px; cursor:pointer; padding:5px 10px 5px 5px; border-radius:100px; border:1px solid var(--line); background:var(--paper-raised); }
+.topbar-avatar{ width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, var(--amber), var(--amber2)); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px; overflow:hidden; }
+.topbar-profile-name{ font-size:13px; font-weight:600; }
+
+.page-content{ padding:32px 34px 72px; max-width:1400px; margin:0 auto; width:100%; }
+.page{ display:none; animation: page-in 0.45s cubic-bezier(.22,1,.36,1); }
+.page.active{ display:block; }
+@keyframes page-in{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+
+.sidebar-overlay{ position:fixed; inset:0; background:rgba(18,32,59,0.4); z-index:110; display:none; }
+.sidebar-overlay.show{ display:block; }
+
+@media (max-width: 980px){
+  .sidebar{ transform:translateX(-100%); box-shadow:var(--shadow-lg); }
+  .sidebar.open{ transform:translateX(0); }
+  .main-wrap{ margin-left:0; }
+  .hamburger{ display:flex; }
+  .topbar-profile-name{ display:none; }
+}
+@media (min-width: 760px){ .topbar-search{ display:block; } }
+@media (max-width: 560px){
+  .page-content{ padding:18px 16px 48px; }
+  .topbar{ padding:0 16px; gap:10px; }
+}
+
+/* ============================================================
+   3. BUTTONS — identical family to Login
+============================================================ */
+.btn{
+  font-weight:600; font-size:13.8px; padding:10px 20px; border-radius:100px; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition);
+  white-space:nowrap; position:relative; overflow:hidden;
+}
+.btn-primary{ background:linear-gradient(135deg, var(--amber), var(--amber2)); color:#fff; box-shadow:var(--shadow-sm); }
+.btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 30px rgba(194,103,10,0.28); }
+.btn-ghost{ color:var(--text); border:1px solid var(--line); }
+.btn-ghost:hover{ background:var(--paper); border-color:var(--ink-soft); }
+.btn-accent{ background:var(--amber); color:#1B1300; box-shadow:var(--shadow-sm); }
+.btn-accent:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); background:var(--amber-dark); }
+.btn-teal{ background:var(--teal-dark); color:#fff; box-shadow:var(--shadow-sm); }
+.btn-teal:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.btn-danger{ background:var(--rose); color:#fff; box-shadow:var(--shadow-sm); }
+.btn-danger:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.btn-sm{ padding:8px 14px; font-size:12.5px; }
+.btn-block{ width:100%; }
+.btn[disabled]{ opacity:0.45; pointer-events:none; }
+.btn .ripple{ position:absolute; border-radius:50%; background:rgba(255,255,255,0.5); transform:scale(0); animation: ripple-anim 0.6s ease-out; pointer-events:none; }
+@keyframes ripple-anim{ to{ transform:scale(3); opacity:0; } }
+.btn.is-loading{ pointer-events:none; color:transparent; }
+.btn.is-loading::after{ content:''; position:absolute; width:16px; height:16px; border-radius:50%; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; left:50%; top:50%; margin:-8px 0 0 -8px; animation:spin 0.7s linear infinite; }
+
+/* ============================================================
+   4. CARDS / KPI TILES / SECTION HEADERS
+============================================================ */
+.section-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:24px; margin-top:44px; flex-wrap:wrap; }
+.page > .section-head:first-child{ margin-top:0; }
+.section-head h2{ font-size:25px; letter-spacing:-0.015em; }
+.section-head p{ color:var(--text-soft); font-size:13.5px; margin-top:4px; }
+
+.card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:var(--shadow-sm); padding:26px 28px; transition:box-shadow var(--transition), transform var(--transition); }
+.card:hover{ box-shadow:var(--shadow-md); }
+.card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; flex-wrap:wrap; }
+.card-head h3{ font-size:16px; }
+.card-head .card-sub{ font-size:12px; color:var(--text-soft); }
+.grid{ display:grid; gap:22px; }
+.grid-2{ grid-template-columns:repeat(2,1fr); }
+.grid-3{ grid-template-columns:repeat(3,1fr); }
+.grid-4{ grid-template-columns:repeat(4,1fr); }
+@media (max-width:1100px){ .grid-4{ grid-template-columns:repeat(2,1fr); } .grid-3{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:640px){ .grid-2,.grid-3,.grid-4{ grid-template-columns:1fr; } }
+
+.kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:14px; }
+.kpi-card{
+  background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); padding:18px;
+  box-shadow:var(--shadow-sm); transition:transform 0.3s, box-shadow 0.3s; position:relative; overflow:hidden;
+}
+.kpi-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
+.kpi-label{ font-size:11px; color:var(--text-soft); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.kpi-value{ font-family:var(--font-display); font-size:26px; font-weight:700; line-height:1; }
+.kpi-value span{ font-size:14px; color:var(--text-soft); font-family:var(--font-body); font-weight:600; }
+.kpi-delta{ font-size:11.5px; margin-top:8px; display:flex; align-items:center; gap:4px; font-weight:600; }
+.kpi-delta.up{ color:var(--teal-dark); } [data-theme="dark"] .kpi-delta.up{ color:var(--teal); }
+.kpi-delta.down{ color:var(--rose); }
+
+/* Attendance Management page */
+.att-overview{ display:flex; gap:28px; align-items:center; flex-wrap:wrap; }
+.att-overview .kpi-grid{ flex:1; min-width:280px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+.att-ring-wrap{ position:relative; width:176px; height:176px; flex-shrink:0; }
+.att-ring{ transform:rotate(-90deg); }
+.att-ring-bg{ fill:none; stroke:var(--line); stroke-width:14; }
+.att-ring-fill{ fill:none; stroke-width:14; stroke-linecap:round; transition:stroke-dasharray .8s ease; }
+.att-ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+.att-ring-center b{ font-family:var(--font-display); font-size:34px; font-weight:700; line-height:1; }
+.att-ring-center span{ font-size:11px; color:var(--text-soft); font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+.att-legend{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-soft); font-family:var(--font-mono); }
+.att-legend-dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+.att-month-bars{ display:flex; align-items:flex-end; gap:18px; min-height:200px; padding:24px 6px 6px; overflow-x:auto; }
+.att-month-col{ flex:1 1 0; min-width:78px; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.att-bar-area{ width:100%; height:132px; display:flex; align-items:flex-end; justify-content:center; }
+.att-bar-wrap{ display:flex; flex-direction:column; justify-content:flex-end; width:24px; height:100%; border-radius:6px; overflow:hidden; background:var(--line); }
+.att-bar-seg{ width:100%; }
+.att-bar-seg.teal{ background:linear-gradient(180deg, var(--teal), var(--teal-dark)); }
+.att-bar-seg.rose{ background:linear-gradient(180deg, var(--rose), #C0392B); }
+.att-month-meta{ text-align:center; }
+.att-month-meta b{ display:block; font-size:12px; font-family:var(--font-mono); }
+.att-month-meta span{ display:block; font-size:11px; color:var(--text-soft); margin-top:3px; }
+.pager{ display:flex; align-items:center; justify-content:center; gap:16px; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line); }
+
+/* Profile summary strip on Dashboard Home */
+.profile-strip{
+  display:flex; align-items:center; gap:20px; background:var(--paper-raised); border:1px solid var(--line);
+  border-radius:var(--radius-lg); padding:22px 26px; margin-bottom:22px; box-shadow:var(--shadow-sm); flex-wrap:wrap;
+  position:relative; overflow:hidden;
+}
+.profile-strip::before{ content:''; position:absolute; top:-60%; right:-10%; width:280px; height:280px; border-radius:50%; background:radial-gradient(circle, rgba(242,169,59,0.14), transparent 70%); pointer-events:none; }
+.profile-strip-avatar{
+  width:84px; height:84px; border-radius:50%; background:linear-gradient(135deg, var(--amber), var(--amber2)); background-size:cover; background-position:center;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:26px; flex-shrink:0; box-shadow:var(--shadow-md); position:relative; z-index:1; border:3px solid #fff; overflow:hidden;
+}
+.profile-strip-info{ flex:1; min-width:220px; position:relative; z-index:1; }
+.profile-strip-info h2{ font-size:21px; margin-bottom:4px; }
+.profile-strip-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.meta-chip{ font-size:12px; background:var(--paper); border:1px solid var(--line); padding:5px 11px; border-radius:100px; color:var(--text-soft); display:flex; align-items:center; gap:6px; }
+.profile-strip-status{ position:relative; z-index:1; text-align:right; flex-shrink:0; }
+.profile-strip-status .kpi-value{ font-size:24px; }
+
+/* ============================================================
+   4b. EXECUTIVE SNAPSHOT — replaces repetitive KPI-card grid
+   with one narrative panel: a readiness ring + grouped dimension
+   bars + a slim metrics ribbon. Content over containers.
+============================================================ */
+.snapshot-panel{
+  background:var(--paper-raised);
+  border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm);
+  padding:32px 34px; margin-bottom:22px; position:relative; overflow:hidden;
+}
+.snapshot-top{ display:flex; gap:40px; align-items:center; flex-wrap:wrap; margin-bottom:30px; }
+.snapshot-ring-wrap{ flex-shrink:0; position:relative; width:172px; height:172px; }
+.snapshot-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.snapshot-ring-track{ fill:none; stroke:var(--line); stroke-width:12; }
+.snapshot-ring-fill{ fill:none; stroke:url(#ringGradient); stroke-width:12; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1); }
+.snapshot-ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.snapshot-ring-center .num{ font-family:var(--font-display); font-size:40px; font-weight:700; line-height:1; color:var(--ink); }
+.snapshot-ring-center .num span{ font-size:15px; color:var(--text-soft); font-family:var(--font-body); font-weight:600; }
+.snapshot-ring-center .lbl{ font-size:11px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.06em; color:var(--text-soft); margin-top:4px; }
+
+/* Small ring variant — same visual language as .snapshot-ring-*, sized for use inside a standard .card (e.g. Trainer Interview Evaluation) */
+.interview-ring-wrap{ flex-shrink:0; position:relative; width:108px; height:108px; }
+.interview-ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.interview-ring-track{ fill:none; stroke:var(--line); stroke-width:10; }
+.interview-ring-fill{ fill:none; stroke:url(#interviewRingGradient); stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1); }
+.interview-ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.interview-ring-center .num{ font-family:var(--font-display); font-size:22px; font-weight:700; line-height:1; color:var(--ink); }
+.interview-ring-center .num span{ font-size:11px; color:var(--text-soft); font-family:var(--font-body); font-weight:600; }
+.snapshot-narrative{ flex:1; min-width:260px; }
+.snapshot-narrative .eyebrow{ color:var(--amber-dark); }
+.snapshot-narrative .eyebrow::before{ background:var(--amber-dark); }
+.snapshot-narrative h2{ font-size:24px; margin-bottom:10px; max-width:520px; }
+.snapshot-narrative p{ color:var(--text-soft); font-size:14px; max-width:480px; line-height:1.65; }
+.dimension-bars{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:22px 32px; }
+.dimension-row{ display:flex; flex-direction:column; gap:7px; }
+.dimension-row-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.dimension-row-head .d-name{ font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:7px; }
+.dimension-row-head .d-score{ font-family:var(--font-mono); font-size:13px; font-weight:700; }
+.dimension-row-head .d-score.warn{ color:var(--rose); }
+.dimension-row .bar-track{ height:7px; }
+.dimension-row .d-delta{ font-size:11px; color:var(--text-soft); }
+.dimension-row .d-delta.up{ color:var(--teal-dark); } [data-theme="dark"] .dimension-row .d-delta.up{ color:var(--teal); }
+.dimension-row .d-delta.down{ color:var(--rose); }
+
+.metrics-ribbon{
+  display:flex; flex-wrap:wrap; margin-top:30px; padding-top:26px; border-top:1px solid var(--line);
+}
+.ribbon-stat{ flex:1; min-width:130px; padding:0 22px; border-left:1px solid var(--line); }
+.ribbon-stat:first-child{ border-left:none; padding-left:0; }
+.ribbon-stat .r-value{ font-family:var(--font-display); font-size:25px; font-weight:700; color:var(--ink); line-height:1; }
+.ribbon-stat .r-value span{ font-size:13px; color:var(--text-soft); font-family:var(--font-body); font-weight:600; }
+.ribbon-stat .r-label{ font-size:11.5px; color:var(--text-soft); margin-top:6px; }
+@media (max-width:760px){ .ribbon-stat{ border-left:none; padding:10px 0; border-top:1px solid var(--line); flex:1 1 45%; } .ribbon-stat:first-child{ border-top:none; } }
+
+/* ============================================================
+   4c. PAGE BANNER — photographic section intro, warm duotone
+============================================================ */
+.page-banner{
+  position:relative; border-radius:var(--radius-lg); overflow:hidden; margin-bottom:26px;
+  min-height:168px; display:flex; align-items:flex-end; box-shadow:var(--shadow-sm);
+  background-size:cover; background-position:center;
+}
+.page-banner::before{ content:''; position:absolute; inset:0; background:linear-gradient(100deg, rgba(16,27,51,.88) 0%, rgba(16,27,51,.55) 45%, rgba(245,158,11,.35) 100%); }
+.page-banner-content{ position:relative; z-index:1; padding:26px 30px; color:#fff; }
+.page-banner-content .eyebrow{ color:#FDE7C4; }
+.page-banner-content .eyebrow::before{ background:#FDE7C4; }
+.page-banner-content h2{ color:#fff; font-size:24px; margin-bottom:6px; }
+.page-banner-content p{ color:rgba(255,255,255,0.82); font-size:13.5px; max-width:520px; }
+
+/* ============================================================
+   5. BADGES / STATUS PILLS
+============================================================ */
+.badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:100px; font-size:11.5px; font-weight:700; white-space:nowrap; }
+.badge-teal{ background:rgba(31,158,147,.14); color:var(--teal-dark); } [data-theme="dark"] .badge-teal{ color:var(--teal); }
+.badge-amber{ background:rgba(242,169,59,.2); color:var(--amber-dark); }
+.badge-rose{ background:rgba(228,87,61,.14); color:var(--rose); }
+.badge-ink{ background:rgba(18,32,59,.08); color:var(--ink-soft); } [data-theme="dark"] .badge-ink{ background:rgba(237,235,227,.1); }
+.dot{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+/* ============================================================
+   6. TABLE
+============================================================ */
+.table-wrap{ overflow-x:auto; border-radius:var(--radius-md); }
+table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:560px; }
+thead th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-soft); padding:10px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+tbody td{ padding:14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr{ transition:background var(--transition); }
+tbody tr:hover{ background:var(--paper); }
+.cell-strong{ font-weight:600; }
+.cell-sub{ font-size:11.5px; color:var(--text-soft); }
+
+/* ============================================================
+   7. PROGRESS / BARS / SKILL METERS
+============================================================ */
+.bar-track{ flex:1; height:8px; border-radius:100px; background:var(--line); overflow:hidden; }
+.bar-fill{ height:100%; border-radius:100px; background:linear-gradient(90deg, var(--amber), var(--amber2)); transition:width 1s cubic-bezier(.22,1,.36,1); }
+.bar-fill.solid-teal{ background:var(--teal-dark); }
+.bar-fill.solid-rose{ background:var(--rose); }
+.skill-row{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.skill-row:last-child{ margin-bottom:0; }
+.skill-row .label{ width:120px; flex-shrink:0; font-size:12.5px; color:var(--text-soft); }
+.skill-row .value{ width:38px; flex-shrink:0; text-align:right; font-size:12.5px; font-weight:700; font-family:var(--font-mono); }
+
+/* ============================================================
+   8. TABS
+============================================================ */
+.tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px; overflow-x:auto; }
+.tab{ padding:10px 16px; font-size:13px; font-weight:600; color:var(--text-soft); border-bottom:2px solid transparent; cursor:pointer; white-space:nowrap; transition:color var(--transition); }
+.tab:hover{ color:var(--text); }
+.tab.active{ color:var(--teal-dark); border-color:var(--teal-dark); } [data-theme="dark"] .tab.active{ color:var(--teal); border-color:var(--teal); }
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; animation: page-in 0.35s cubic-bezier(.22,1,.36,1); }
+
+/* ============================================================
+   9. EMPTY STATE / SKELETON
+============================================================ */
+.empty-state{ text-align:center; padding:50px 20px; color:var(--text-soft); }
+.empty-state .empty-icon{ font-size:34px; margin-bottom:14px; opacity:0.6; }
+.empty-state h4{ color:var(--text); font-size:15px; margin-bottom:6px; }
+.skeleton{ background:linear-gradient(90deg, var(--line) 25%, rgba(255,255,255,.5) 50%, var(--line) 75%); background-size:200% 100%; animation:skeleton-sweep 1.4s infinite; border-radius:8px; }
+[data-theme="dark"] .skeleton{ background:linear-gradient(90deg, var(--line) 25%, rgba(255,255,255,.06) 50%, var(--line) 75%); background-size:200% 100%; }
+@keyframes skeleton-sweep{ 0%{ background-position:200% 0; } 100%{ background-position:-200% 0; } }
+
+/* ============================================================
+   10. TOAST
+============================================================ */
+.toast-container{ position:fixed; bottom:22px; right:22px; z-index:400; display:flex; flex-direction:column; gap:10px; max-width:340px; }
+.toast{
+  background:var(--ink); color:var(--paper); padding:13px 16px; border-radius:var(--radius-sm); font-size:13px;
+  box-shadow:var(--shadow-md); display:flex; align-items:center; gap:10px; animation:toast-in .35s cubic-bezier(.22,1,.36,1);
+}
+.toast.success::before{ content:'✓'; color:var(--teal); font-weight:700; }
+.toast.info::before{ content:'ℹ'; color:var(--amber); font-weight:700; }
+@keyframes toast-in{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+.toast-fade{ animation:toast-out .35s ease forwards; }
+@keyframes toast-out{ to{ opacity:0; transform:translateX(20px); } }
+
+/* ============================================================
+   11. MODALS + CONFIRM DIALOGS
+============================================================ */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(18,32,59,.5); backdrop-filter:blur(4px); display:flex; align-items:center;
+  justify-content:center; z-index:500; opacity:0; visibility:hidden; transition:all var(--transition); padding:20px;
+}
+.modal-overlay.show{ opacity:1; visibility:visible; }
+.modal{
+  background:var(--paper-raised); border-radius:var(--radius-lg); max-width:560px; width:100%; max-height:86vh; overflow-y:auto;
+  padding:28px; box-shadow:var(--shadow-lg); transform:translateY(16px) scale(0.98); transition:transform var(--transition); border:1px solid var(--line);
+}
+.modal-overlay.show .modal{ transform:translateY(0) scale(1); }
+.modal-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; gap:10px; }
+.modal-head h3{ font-size:19px; }
+.modal-close{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.modal-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
+
+/* ============================================================
+   12. FORM FIELDS — floating label pattern, identical to Login
+============================================================ */
+.field{ position:relative; margin-bottom:20px; }
+.field label{ position:absolute; left:15px; top:14px; font-size:14px; color:var(--text-soft); pointer-events:none; transition: all var(--transition); background:transparent; padding:0 4px; }
+.field input, .field select, .field textarea{
+  width:100%; padding:15px 15px 6px; font-size:14.5px; color:var(--text); background:var(--paper);
+  border:1.5px solid var(--line); border-radius:var(--radius-sm); transition: border-color var(--transition), box-shadow var(--transition); appearance:none; font-family:inherit;
+}
+.field textarea{ min-height:90px; resize:vertical; padding-top:20px; }
+.field input::placeholder{ color:transparent; }
+.field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--teal); box-shadow:0 0 0 4px rgba(31,158,147,0.14); }
+.field input:focus + label, .field input:not(:placeholder-shown) + label, .field.has-value label, .field select + label, .field textarea:focus + label, .field textarea.has-value + label{
+  top:6px; font-size:10.5px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:var(--teal-dark);
+}
+[data-theme="dark"] .field input:focus + label, [data-theme="dark"] .field input:not(:placeholder-shown) + label, [data-theme="dark"] .field.has-value label{ color:var(--teal); }
+.field.locked input{ background:var(--line); opacity:0.6; pointer-events:none; }
+.field.select-field label{ position:static; display:block; margin-bottom:7px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; color:var(--text-soft); }
+.field.select-field select{ padding:13px 15px; }
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; } @media (max-width:560px){ .field-row{ grid-template-columns:1fr; } }
+.checkbox-wrap{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--text-soft); cursor:pointer; margin-bottom:12px; }
+.checkbox-wrap input{ width:16px; height:16px; accent-color:var(--teal-dark); cursor:pointer; }
+.chip-input-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.chip{ background:var(--paper); border:1px solid var(--line); padding:6px 12px; border-radius:100px; font-size:12.5px; display:flex; align-items:center; gap:6px; }
+.chip button{ font-size:13px; color:var(--text-soft); }
+
+/* ============================================================
+   13. CHARTS (lightweight inline SVG, theme-aware)
+============================================================ */
+.chart-box{ width:100%; }
+.chart-legend{ display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:12px; color:var(--text-soft); }
+.chart-legend span{ display:inline-flex; align-items:center; gap:6px; }
+.legend-dot{ width:9px; height:9px; border-radius:50%; }
+
+/* ============================================================
+   14. ONLINE EXAM MODULE + ANTI-CHEAT OVERLAY
+============================================================ */
+.exam-overlay{ position:fixed; inset:0; background:var(--paper); z-index:900; display:none; flex-direction:column; }
+.exam-overlay.active{ display:flex; }
+/* Task 7: Dedicated Exam Mode — while an assessment/quiz is open, the
+   sidebar, topbar and rest of the dashboard chrome are removed from
+   layout entirely (not just visually covered by the overlay), so only
+   the exam interface exists on the page. */
+body.exam-mode-active .sidebar,
+body.exam-mode-active .topbar,
+body.exam-mode-active .sidebar-overlay{ display:none !important; }
+body.exam-mode-active .main-wrap{ margin-left:0 !important; }
+body.exam-mode-active{ overflow:hidden; }
+.exam-topbar{ display:flex; align-items:center; justify-content:space-between; padding:16px 26px; border-bottom:1px solid var(--line); background:var(--paper-raised); gap:16px; flex-wrap:wrap; }
+.exam-title{ font-size:15px; font-weight:700; }
+.exam-timer{ font-family:var(--font-mono); font-size:20px; font-weight:700; padding:8px 18px; border-radius:100px; background:var(--paper); border:1.5px solid var(--line); }
+.exam-timer.low{ color:var(--rose); border-color:var(--rose); animation:pulse-timer 1s infinite; }
+@keyframes pulse-timer{ 50%{ opacity:0.55; } }
+.violation-indicator{ font-size:12.5px; font-family:var(--font-mono); color:var(--rose); font-weight:700; display:flex; align-items:center; gap:6px; }
+.exam-progress-track{ height:5px; background:var(--line); }
+.exam-progress-fill{ height:100%; background:linear-gradient(90deg, var(--amber), var(--amber2)); transition:width .3s; }
+.exam-body{ flex:1; display:flex; overflow:hidden; }
+.exam-question-panel{ flex:1; padding:34px 40px; overflow-y:auto; }
+.exam-q-meta{ display:flex; gap:10px; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+.exam-q-text{ font-size:18px; line-height:1.5; margin-bottom:26px; max-width:700px; }
+.exam-options{ display:flex; flex-direction:column; gap:12px; max-width:640px; }
+.exam-option{ display:flex; align-items:center; gap:14px; padding:15px 18px; border:1.5px solid var(--line); border-radius:var(--radius-sm); cursor:pointer; transition:all var(--transition); background:var(--paper-raised); }
+.exam-option:hover{ border-color:var(--teal); }
+.exam-option.selected{ border-color:var(--teal-dark); background:rgba(31,158,147,.08); }
+.exam-option input{ accent-color:var(--teal-dark); width:16px; height:16px; }
+.exam-actions-row{ display:flex; justify-content:space-between; align-items:center; margin-top:36px; gap:12px; flex-wrap:wrap; max-width:700px; }
+.exam-actions-left, .exam-actions-right{ display:flex; gap:10px; flex-wrap:wrap; }
+.exam-palette-sidebar{ width:260px; flex-shrink:0; border-left:1px solid var(--line); background:var(--paper-raised); padding:22px; overflow-y:auto; }
+.palette-legend{ display:flex; flex-direction:column; gap:8px; font-size:11.5px; margin-bottom:18px; color:var(--text-soft); }
+.palette-legend span{ display:flex; align-items:center; gap:8px; }
+.palette-swatch{ width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+.palette-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.palette-cell{
+  aspect-ratio:1; border-radius:6px; font-size:12px; font-weight:700; font-family:var(--font-mono);
+  display:flex; align-items:center; justify-content:center; border:1.5px solid var(--line); background:var(--paper);
+  color:var(--text-soft); transition:all var(--transition);
+}
+.palette-cell.answered{ background:var(--teal-dark); color:#fff; border-color:var(--teal-dark); }
+.palette-cell.marked{ background:var(--amber); color:#1B1300; border-color:var(--amber-dark); }
+.palette-cell.current{ box-shadow:0 0 0 2px var(--ink); }
+.exam-intro{ max-width:620px; margin:0 auto; text-align:center; padding:60px 20px; }
+.exam-intro .rules-list{ text-align:left; background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); padding:22px 26px; margin:26px 0; box-shadow:var(--shadow-sm); }
+.exam-intro .rules-list li{ display:flex; gap:12px; padding:9px 0; font-size:13.8px; color:var(--text-soft); border-bottom:1px solid var(--line); }
+.exam-intro .rules-list li:last-child{ border-bottom:none; }
+@media (max-width:860px){ .exam-palette-sidebar{ display:none; } .exam-question-panel{ padding:24px; } }
+
+/* ============================================================
+   15. CALENDAR
+============================================================ */
+.calendar-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.calendar-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.calendar-dow{ text-align:center; font-size:11px; font-family:var(--font-mono); color:var(--text-soft); text-transform:uppercase; padding-bottom:6px; }
+.calendar-day{
+  aspect-ratio:1; border:1px solid var(--line); border-radius:var(--radius-sm); padding:6px; font-size:12px;
+  display:flex; flex-direction:column; gap:3px; background:var(--paper-raised); position:relative; overflow:hidden;
+}
+.calendar-day.empty{ background:transparent; border-color:transparent; }
+.calendar-day.today{ border-color:var(--teal-dark); box-shadow:0 0 0 2px rgba(31,158,147,.18); }
+.calendar-day .daynum{ font-weight:700; font-family:var(--font-mono); }
+.cal-event{ font-size:9.5px; padding:2px 5px; border-radius:4px; background:rgba(31,158,147,.15); color:var(--teal-dark); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-theme="dark"] .cal-event{ color:var(--teal); }
+.cal-event.warn{ background:rgba(242,169,59,.2); color:var(--amber-dark); }
+.cal-event.risk{ background:rgba(228,87,61,.15); color:var(--rose); }
+@media (max-width:700px){ .calendar-day{ font-size:10px; } .cal-event{ display:none; } .calendar-day.has-event::after{ content:''; position:absolute; bottom:4px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%; background:var(--teal-dark); } }
+
+/* ============================================================
+   16. ROADMAP TIMELINE
+============================================================ */
+.roadmap-track{ position:relative; padding-left:34px; }
+.roadmap-track::before{ content:''; position:absolute; left:11px; top:8px; bottom:8px; width:2px; background:var(--line); }
+.roadmap-item{ position:relative; padding-bottom:30px; }
+.roadmap-item:last-child{ padding-bottom:0; }
+.roadmap-dot{ position:absolute; left:-34px; top:2px; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; border:2px solid var(--paper-raised); }
+.roadmap-dot.done{ background:var(--teal-dark); color:#fff; }
+.roadmap-dot.progress{ background:var(--amber); color:#1B1300; }
+.roadmap-dot.todo{ background:var(--rose); color:#fff; }
+.roadmap-item h4{ font-size:14.5px; margin-bottom:4px; }
+.roadmap-item p{ font-size:13px; color:var(--text-soft); }
+
+/* ============================================================
+   17. RANKINGS
+============================================================ */
+.rank-card{ text-align:center; padding:22px 16px; }
+.rank-card .rank-value{ font-family:var(--font-display); font-size:34px; font-weight:700; }
+.rank-card .rank-label{ font-size:12px; color:var(--text-soft); margin-top:4px; }
+.leaderboard-row{ display:flex; align-items:center; gap:14px; padding:12px 8px; border-bottom:1px solid var(--line); }
+.leaderboard-row:last-child{ border-bottom:none; }
+.leaderboard-row.me{ background:rgba(242,169,59,.08); border-radius:var(--radius-sm); }
+.lb-rank{ width:28px; text-align:center; font-family:var(--font-mono); font-weight:700; color:var(--text-soft); flex-shrink:0; }
+.lb-avatar{ width:32px; height:32px; border-radius:50%; background:var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--ink-soft); flex-shrink:0; }
+.lb-name{ flex:1; font-size:13.5px; font-weight:600; }
+.lb-score{ font-family:var(--font-mono); font-weight:700; font-size:13px; }
+
+/* Notification dropdown */
+.dropdown-panel{
+  position:absolute; top:calc(100% + 10px); right:0; width:340px; max-height:420px; overflow-y:auto;
+  background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); box-shadow:var(--shadow-lg);
+  opacity:0; visibility:hidden; transform:translateY(-8px); transition:all var(--transition); z-index:150;
+}
+.dropdown-panel.show{ opacity:1; visibility:visible; transform:translateY(0); }
+.dropdown-head{ padding:14px 16px; border-bottom:1px solid var(--line); font-weight:700; font-size:13.5px; display:flex; justify-content:space-between; align-items:center; }
+.notif-item{ padding:12px 16px; border-bottom:1px solid var(--line); font-size:12.8px; display:flex; gap:10px; }
+.notif-item:last-child{ border-bottom:none; }
+.notif-item.unread{ background:rgba(31,158,147,.06); }
+.notif-icon{ width:30px; height:30px; border-radius:50%; background:var(--paper); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px; }
+.notif-body strong{ display:block; margin-bottom:2px; }
+.notif-time{ color:var(--text-soft); font-size:10.5px; margin-top:3px; }
+
+@media (max-width:420px){ .dropdown-panel{ width:290px; right:-40px; } }
+
+/* ============================================================
+   16. RESPONSIVENESS + ANIMATION + UX ENHANCEMENTS
+   Additive layer only — no colours, fonts, spacing scale, or
+   component structure changed. Fills gaps across breakpoints,
+   strengthens motion design, and improves touch/keyboard UX.
+============================================================ */
+
+/* -- 16a. Global motion polish -------------------------------- */
+.sidebar, .main-wrap, .card, .kpi-card, .btn, .icon-btn, .nav-item,
+.chip, .modal, .dropdown-panel, .toast, .tab, .bar-fill, .hamburger{
+  will-change:transform;
+}
+.hamburger{
+  transition: transform var(--transition), background var(--transition), border-color var(--transition);
+}
+.hamburger:hover{ background:var(--paper); }
+.hamburger:active{ transform:scale(0.92); }
+.hamburger.is-open{ transform:rotate(90deg); }
+
+.sidebar-overlay{
+  opacity:0; transition:opacity var(--transition), background var(--transition);
+  backdrop-filter:blur(2px);
+}
+.sidebar-overlay.show{ opacity:1; }
+
+/* Card / tile press + focus feedback (keyboard + touch) */
+.card:active, .kpi-card:active{ transform:scale(0.995); }
+.nav-item:active{ transform:scale(0.98); }
+.icon-btn:active{ transform:scale(0.9); }
+
+/* Scroll-reveal (progressively enhanced; elements are visible by
+   default so nothing breaks if JS hasn't run yet) */
+.reveal-init{ opacity:0; transform:translateY(16px); transition:opacity 0.6s cubic-bezier(.22,1,.36,1), transform 0.6s cubic-bezier(.22,1,.36,1); }
+.reveal-init.reveal-in{ opacity:1; transform:translateY(0); }
+
+/* Generic tooltip utility (data-tooltip="...") for future use */
+[data-tooltip]{ position:relative; }
+[data-tooltip]::after{
+  content:attr(data-tooltip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(4px);
+  background:var(--ink); color:var(--paper); font-size:11.5px; font-weight:600; padding:6px 10px; border-radius:8px;
+  white-space:nowrap; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .25s ease, transform .25s ease; z-index:200;
+  box-shadow:var(--shadow-md);
+}
+[data-theme="dark"] [data-tooltip]::after{ background:var(--paper-raised); color:var(--text); border:1px solid var(--line); }
+[data-tooltip]:hover::after, [data-tooltip]:focus-visible::after{ opacity:1; visibility:visible; transform:translateX(-50%) translateY(0); }
+
+/* Generic accordion utility (ready for future modular use) */
+.accordion-item{ border:1px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; margin-bottom:8px; }
+.accordion-header{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; cursor:pointer; font-weight:600; font-size:13.8px; transition:background var(--transition); }
+.accordion-header:hover{ background:var(--paper); }
+.accordion-header .accordion-caret{ transition:transform var(--transition); flex-shrink:0; }
+.accordion-item.open .accordion-header .accordion-caret{ transform:rotate(180deg); }
+.accordion-body{ max-height:0; overflow:hidden; transition:max-height var(--transition); }
+.accordion-body-inner{ padding:0 16px 16px; font-size:13px; color:var(--text-soft); }
+
+/* -- 16b. Touch target sizing (mobile / tablet only) ----------- */
+@media (max-width:980px){
+  .icon-btn{ width:42px; height:42px; }
+  .hamburger{ width:42px; height:42px; }
+  .nav-item{ padding:12px 14px; font-size:14.2px; }
+  .tab{ padding:12px 16px; }
+  .modal-close{ width:34px; height:34px; }
+  .btn{ padding:11px 20px; }
+  .btn-sm{ padding:9.5px 14px; }
+}
+
+/* -- 16c. Small phones (320px – 400px) -------------------------- */
+@media (max-width:400px){
+  .page-content{ padding:14px 12px 44px; }
+  .topbar{ padding:0 12px; gap:8px; }
+  .section-head h2{ font-size:21px; }
+  .snapshot-panel{ padding:22px 18px; }
+  .snapshot-top{ gap:22px; }
+  .snapshot-ring-wrap{ width:132px; height:132px; }
+  .snapshot-narrative h2{ font-size:20px; }
+  .profile-strip{ padding:18px 16px; gap:14px; }
+  .profile-strip-avatar{ width:64px; height:64px; font-size:20px; }
+  .kpi-grid{ grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+  .card{ padding:20px 18px; }
+  .modal{ padding:22px 18px; width:calc(100vw - 24px); }
+  .topbar-profile-name, .breadcrumb{ display:none; }
+}
+
+/* -- 16d. Tablet portrait / small laptop refinement ------------- */
+@media (min-width:641px) and (max-width:980px){
+  .kpi-grid{ grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+  .dimension-bars{ grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+  .page-content{ padding:26px 24px 60px; }
+}
+
+/* -- 16e. Large desktop / 4K displays ---------------------------- */
+@media (min-width:1800px){
+  :root{ --sidebar-w:288px; --maxw:1480px; }
+  .page-content{ max-width:1600px; padding:44px 48px 90px; }
+  .section-head h2{ font-size:28px; }
+  body{ font-size:16.5px; }
+}
+@media (min-width:2400px){
+  .page-content{ max-width:1800px; }
+  body{ font-size:18px; }
+}
+
+/* -- 16f. Fluid heading scale (prevents overflow at any width) -- */
+.page-title-block h1{ font-size:clamp(16px, 2.4vw, 19px); }
+.section-head h2{ font-size:clamp(19px, 3vw, 25px); }
+.snapshot-narrative h2{ font-size:clamp(19px, 3vw, 24px); }
+.snapshot-ring-center .num{ font-size:clamp(30px, 6vw, 40px); }
+
+/* -- 16g. Loading state polish ----------------------------------- */
+.skeleton{ animation-duration:1.4s; }
+@media (prefers-reduced-motion: reduce){
+  .skeleton{ animation:none; opacity:0.6; }
+  .reveal-init{ opacity:1 !important; transform:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-mark"></div><div class="loader-text">Loading</div></div>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="app-shell">
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img class="brand-logo" src="procapSys logo.png" alt="ProCapSys">
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="nav-group-label">Overview</div>
+      <div class="nav-item active" data-page="dashboard"><span class="nav-icon">🏠</span>Dashboard Home</div>
+
+      <div class="nav-group-label">Assessments</div>
+      <div class="nav-item" data-page="assessments"><span class="nav-icon">📝</span>My Assessments</div>
+      <div class="nav-item" data-page="quizhistory"><span class="nav-icon">🧾</span>Quiz History</div>
+
+      <div class="nav-group-label">Growth</div>
+      <div class="nav-item" data-page="cohort"><span class="nav-icon">👥</span>My Cohort</div>
+      <div class="nav-item" data-page="workshops"><span class="nav-icon">🎓</span>Workshops & Interventions</div>
+      <div class="nav-item" data-page="progress"><span class="nav-icon">📈</span>Progress Dashboard</div>
+      <div class="nav-item" data-page="readiness"><span class="nav-icon">🎯</span>Placement Readiness</div>
+      <div class="nav-item" data-page="roadmap"><span class="nav-icon">🗺️</span>Career Roadmap</div>
+      <div class="nav-item" data-page="rankings"><span class="nav-icon">🏆</span>Rankings</div>
+
+      <div class="nav-group-label">Activity</div>
+      <div class="nav-item" data-page="attendance"><span class="nav-icon">🗓️</span>Attendance Management</div>
+      <div class="nav-item" data-page="events"><span class="nav-icon">📢</span>Events</div>
+      <div class="nav-item" data-page="calendar"><span class="nav-icon">📅</span>Calendar</div>
+      <div class="nav-item" data-page="notifications"><span class="nav-icon">🔔</span>Notifications<span class="nav-item-badge" id="navNotifBadge">3</span></div>
+
+      <div class="nav-group-label">Account</div>
+      <div class="nav-item" data-page="reports"><span class="nav-icon">📄</span>Reports</div>
+      <div class="nav-item" data-page="profile"><span class="nav-icon">🙍</span>Profile</div>
+      <div class="nav-item" data-page="settings"><span class="nav-icon">⚙️</span>Settings</div>
+      <div class="nav-item" id="logoutNavItem"><span class="nav-icon">🚪</span>Logout</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user" data-page="profile">
+        <div class="sidebar-avatar" id="sidebarAvatar" aria-label="Profile photo"></div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebarUserName">—</div>
+          <div class="sidebar-user-role" id="sidebarUserRole">Student</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+  ============================================================ -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">☰</button>
+      <div class="page-title-block">
+        <div class="breadcrumb" id="breadcrumb">Student · Overview</div>
+        <h1 id="pageTitle">Dashboard Home</h1>
+      </div>
+      <div class="topbar-search">
+        <span class="topbar-search-icon">🔍</span>
+        <input type="text" placeholder="Search assessments, workshops, reports…" id="globalSearch">
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+        <div style="position:relative;">
+          <button class="icon-btn" id="notifBtn" aria-label="Notifications">🔔<span class="icon-dot"></span></button>
+          <div class="dropdown-panel" id="notifPanel">
+            <div class="dropdown-head">Notifications <a href="#" class="link-teal" data-page="notifications" style="font-size:11.5px;font-weight:600;color:var(--teal-dark);">View all</a></div>
+            <div id="notifPanelList"></div>
+          </div>
+        </div>
+        <div class="topbar-profile" data-page="profile">
+          <div class="topbar-avatar" id="topbarAvatar" aria-label="Profile photo">—</div>
+          <span class="topbar-profile-name" id="topbarProfileName">—</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content" id="pageContent">
+
+<!-- ============================================================
+     PAGE: DASHBOARD HOME
+============================================================ -->
+<section class="page active" id="page-dashboard">
+  <div class="profile-strip">
+    <div class="profile-strip-avatar" id="dashProfileAvatar"></div>
+    <div class="profile-strip-info">
+      <h2 id="dashWelcomeName">Welcome back 👋</h2>
+      <p style="color:var(--text-soft);font-size:13.5px;" id="dashProfileMeta">Loading profile…</p>
+      <div class="profile-strip-meta">
+        <span class="meta-chip" id="dashCollegeChip">🏫 —</span>
+        <span class="meta-chip" id="dashCohortChip">👥 Cohort: —</span>
+      </div>
+    </div>
+    <div class="profile-strip-status">
+      <div class="kpi-label">Overall Score</div>
+      <div class="kpi-value" id="dashReadinessValue">—</div>
+      <span class="badge badge-amber" style="margin-top:6px;" id="dashReadinessBadge">—</span>
+      <span class="badge" style="margin-top:6px;" id="dashReadinessStatusBadge">—</span>
+    </div>
+  </div>
+
+  <div class="section-head" style="margin-top:0;"><div><h2>Your Employability Snapshot</h2><p>One read on where you stand — and where each score is headed</p></div></div>
+
+  <div class="snapshot-panel">
+    <div class="snapshot-top">
+      <div class="snapshot-ring-wrap">
+        <svg viewBox="0 0 172 172">
+          <defs>
+            <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--amber)"/>
+              <stop offset="100%" stop-color="var(--amber2)"/>
+            </linearGradient>
+          </defs>
+          <circle class="snapshot-ring-track" cx="86" cy="86" r="74"/>
+          <circle class="snapshot-ring-fill" id="snapshotRingFill" cx="86" cy="86" r="74" stroke-dasharray="465" stroke-dashoffset="465"/>
+        </svg>
+        <div class="snapshot-ring-center">
+          <div class="num" id="snapshotRingValue">—</div>
+          <div class="lbl">Overall Score</div>
+        </div>
+      </div>
+      <div class="snapshot-narrative">
+        <span class="eyebrow">Across all completed assessments</span>
+        <h2 id="snapshotHeadline">Complete an assessment to see your employability snapshot.</h2>
+        <p id="snapshotBody">Once you finish an assessment, your section-wise scores and overall readiness will appear here.</p>
+      </div>
+    </div>
+
+    <div class="dimension-bars" id="dimensionBars">
+      <p class="cell-sub">No assessment scores yet.</p>
+    </div>
+
+    <div class="metrics-ribbon">
+      <div class="ribbon-stat"><div class="r-value" id="ribbonQuizzesValue">0<span>/0</span></div><div class="r-label">🧪 Assessments completed</div></div>
+      <div class="ribbon-stat"><div class="r-value" id="ribbonOverallValue">—</div><div class="r-label">📈 Overall score</div></div>
+      <div class="ribbon-stat"><div class="r-value" id="ribbonInterviewValue">—</div><div class="r-label">🎯 Interview score</div></div>
+      <div class="ribbon-stat"><div class="r-value" id="ribbonCohortValue">—</div><div class="r-label">👥 Cohort</div></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3>Recent Activity</h3><span class="card-sub">Last 7 days</span></div>
+      <div id="recentActivityList"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Quick Actions</h3></div>
+      <div class="grid grid-2" style="gap:12px;">
+        <button class="btn btn-primary btn-block" data-page="assessments">📝 Take Assessment</button>
+        <button class="btn btn-ghost btn-block" data-page="progress">📈 View Progress</button>
+        <button class="btn btn-ghost btn-block" data-page="quizhistory">🧾 View Quiz History</button>
+        <button class="btn btn-ghost btn-block" data-page="workshops">🎓 View Workshops</button>
+        <button class="btn btn-ghost btn-block" data-page="calendar">📅 View Calendar</button>
+        <button class="btn btn-ghost btn-block" data-page="roadmap">🗺️ Career Roadmap</button>
+      </div>
+      <div class="card-head" style="margin-top:26px;"><h3>Cohort Snapshot</h3></div>
+      <p style="font-size:13px;color:var(--text-soft);margin-bottom:12px;" id="cohortSnapshotText">Your cohort is generated once your baseline assessment and manual interview are both complete.</p>
+      <button class="btn btn-teal btn-sm" data-page="cohort">View Cohort Plan →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: MY ASSESSMENTS
+============================================================ -->
+<section class="page" id="page-assessments">
+  <div class="section-head"><div><h2>My Assessments</h2><p>Every assessment and quiz assigned to you, in one place</p></div></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="assess-all">All</div>
+    <div class="tab" data-tab="assess-live">Live</div>
+    <div class="tab" data-tab="assess-scheduled">Scheduled</div>
+    <div class="tab" data-tab="assess-attempted">Attempted</div>
+  </div>
+
+  <div class="grid grid-2" id="assessmentCards">
+    <p class="cell-sub">Loading your assessments…</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     ONLINE EXAM MODULE (FULLSCREEN OVERLAY, ANTI-CHEAT)
+============================================================ -->
+<div class="exam-overlay" id="examOverlay">
+  <!-- Intro / instructions state -->
+  <div id="examIntroState" style="overflow-y:auto;">
+    <div class="exam-intro">
+      <span class="eyebrow">Before you begin</span>
+      <h2 style="font-size:26px;" id="examIntroTitle">Assessment</h2>
+      <p style="color:var(--text-soft);margin-top:10px;" id="examIntroMeta">Loading assessment…</p>
+      <ul class="rules-list">
+        <li>🖥️ This exam runs in <strong>full-screen mode</strong>. Exiting full screen counts as a violation.</li>
+        <li>🚫 Switching tabs, windows, or losing browser focus is monitored automatically.</li>
+        <li>⚠️ You are allowed a maximum of <strong>3 violations</strong>. The 3rd violation auto-submits your exam.</li>
+        <li>⏱️ The exam auto-submits when the timer reaches zero.</li>
+        <li>🔒 No edits are possible after final submission.</li>
+      </ul>
+      <button class="btn btn-primary" style="padding:14px 30px;" onclick="enterExam()">Enter Full-Screen & Start Exam</button>
+      <p class="cell-sub" style="margin-top:14px;">By starting, you agree that this attempt will be recorded for integrity monitoring.</p>
+    </div>
+  </div>
+
+  <!-- Active exam state -->
+  <div id="examActiveState" style="display:none;flex-direction:column;height:100%;">
+    <div class="exam-progress-track"><div class="exam-progress-fill" id="examProgressFill" style="width:4%;"></div></div>
+    <div class="exam-topbar">
+      <div class="exam-title" id="examTopTitle">Assessment</div>
+      <div class="violation-indicator" id="violationIndicator">🛡️ Switches remaining: <span id="switchesLeft">3</span></div>
+      <div class="exam-timer" id="examTimer">30:00</div>
+    </div>
+    <div class="exam-body">
+      <div class="exam-question-panel">
+        <div class="exam-q-meta">
+          <span class="badge badge-ink" id="examQNum">Question 1 of 1</span>
+          <span class="badge badge-teal" id="examQSection">Section</span>
+        </div>
+        <div class="exam-q-text" id="examQText">Loading question…</div>
+        <div class="exam-options" id="examOptions"></div>
+        <div class="exam-actions-row">
+          <div class="exam-actions-left">
+            <button class="btn btn-ghost btn-sm" id="examPrevBtn" onclick="examNav(-1)">← Previous</button>
+            <button class="btn btn-ghost btn-sm" onclick="markForReview()">🚩 Mark for Review</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearAnswer()">Clear Answer</button>
+          </div>
+          <div class="exam-actions-right">
+            <button class="btn btn-teal btn-sm" id="examNextBtn" onclick="examNav(1)">Next →</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmSubmitExam()">Submit Assessment</button>
+          </div>
+        </div>
+      </div>
+      <aside class="exam-palette-sidebar">
+        <h4 style="font-size:13.5px;margin-bottom:14px;">Question Palette</h4>
+        <div class="palette-legend">
+          <span><span class="palette-swatch" style="background:var(--teal-dark);"></span>Answered</span>
+          <span><span class="palette-swatch" style="background:var(--amber);"></span>Marked for review</span>
+          <span><span class="palette-swatch" style="background:var(--paper);border:1.5px solid var(--line);"></span>Not answered</span>
+        </div>
+        <div class="palette-grid" id="paletteGrid"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PAGE: MY COHORT
+============================================================ -->
+<section class="page" id="page-cohort">
+  <div class="page-banner" style="background-image:url('https://picsum.photos/seed/cohort-classroom/1200/500');">
+    <div class="page-banner-content">
+      <span class="eyebrow">My Cohort</span>
+      <h2>Why you're grouped this way, and what happens next</h2>
+      <p>Cohorts group students by the dimension that needs the most attention, so every workshop you're assigned closes a real gap.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3>Overall Performance</h3><span class="card-sub">Across every validated assessment</span></div>
+    <div class="grid grid-2" style="gap:16px;">
+      <div class="kpi-card">
+        <div class="kpi-label">Overall Percentage</div>
+        <div class="kpi-value" id="cohortOverallScoreValue">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Overall Cohort</div>
+        <div class="kpi-value" id="cohortOverallCohortValue">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3>Current Cohort</h3><span class="badge badge-amber" id="cohortBadge">—</span></div>
+      <p style="font-size:13.5px;color:var(--text-soft);margin-bottom:16px;" id="cohortReasonText">Loading your cohort details…</p>
+      <div id="cohortDimensionBars"><p class="cell-sub">No dimension data yet.</p></div>
+      <p class="cell-sub" style="margin-top:12px;">Trainers are assigned per session — any available trainer may run your workshops or interventions.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Recommended Workshops</h3></div>
+      <div class="table-wrap"><table><tbody id="cohortWorkshopsBody">
+        <tr><td class="cell-sub">Loading recommended workshops…</td></tr>
+      </tbody></table></div>
+      <div class="card-head" style="margin-top:20px;"><h3>Upcoming Interventions</h3></div>
+      <p class="cell-sub" style="margin-bottom:10px;" id="cohortInterventionsText">Loading…</p>
+      <div class="card-head" style="margin-top:20px;"><h3>Expected Outcome</h3></div>
+      <p style="font-size:13.5px;color:var(--text-soft);" id="cohortOutcomeText">Loading…</p>
+      <div class="skill-row" style="margin-top:14px;"><span class="label">Current Progress</span><div class="bar-track"><div class="bar-fill" id="cohortProgressBar" style="width:0%;"></div></div><span class="value" id="cohortProgressValue">—</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: WORKSHOPS & INTERVENTIONS
+============================================================ -->
+<section class="page" id="page-workshops">
+  <div class="page-banner" style="background-image:url('https://picsum.photos/seed/workshop-group/1200/500');">
+    <div class="page-banner-content">
+      <span class="eyebrow">Workshops & Interventions</span>
+      <h2>Sessions designed to close your skill gaps</h2>
+      <p>Hands-on, trainer-led sessions mapped directly to the dimensions your assessments say need work.</p>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="wk-upcoming">Upcoming</div>
+    <div class="tab" data-tab="wk-completed">Completed</div>
+  </div>
+  <div class="tab-panel active" id="wk-upcoming">
+    <div class="grid grid-2" id="workshopsUpcomingGrid">
+      <p class="cell-sub">Loading upcoming workshops…</p>
+    </div>
+  </div>
+  <div class="tab-panel" id="wk-completed">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Workshop</th><th>Trainer</th><th>Date</th><th>Attendance</th><th>Status</th></tr></thead>
+      <tbody id="workshopsCompletedBody">
+        <tr><td colspan="5" class="cell-sub">Loading completed workshops…</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: EVENTS
+============================================================ -->
+<section class="page" id="page-events">
+  <div class="section-head"><div><h2>Events</h2><p>College events, placement drives and announcements</p></div></div>
+  <div class="grid grid-2" id="eventsGrid">
+    <p class="cell-sub">Loading events…</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: PROGRESS DASHBOARD
+============================================================ -->
+<section class="page" id="page-progress">
+  <div class="section-head"><div><h2>Progress Dashboard</h2><p>Baseline → Mid → Final growth across every dimension</p></div></div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3>Overall Growth Trajectory</h3><span class="card-sub" id="growthTrajectorySub">—</span></div>
+    <div class="chart-box" id="lineChartBox"><p class="cell-sub">Loading growth trajectory…</p></div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-head"><h3>Growth by Dimension</h3></div>
+      <div id="growthByDimension"><p class="cell-sub">Loading…</p></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Attendance & Participation Trend</h3></div>
+      <div id="attendanceParticipationTrend"><p class="cell-sub">Loading…</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: PLACEMENT READINESS
+============================================================ -->
+<section class="page" id="page-readiness">
+  <div class="section-head"><div><h2>Placement Readiness</h2><p>Your live standing against the platform's readiness rules</p></div></div>
+  <div class="grid grid-2" style="align-items:start;">
+    <div class="card" style="text-align:center;padding:36px 20px;">
+      <div class="kpi-label" style="justify-content:center;">Placement Readiness</div>
+      <div class="kpi-value" style="font-size:52px;" id="readinessScoreValue">—<span style="font-size:18px;">/100</span></div>
+      <span class="badge badge-amber" style="margin-top:10px;" id="readinessBadge">—</span>
+      <div class="bar-track" style="margin-top:20px;height:10px;"><div class="bar-fill" id="readinessBar" style="width:0%;"></div></div>
+      <p class="cell-sub" style="margin-top:16px;" id="readinessSummaryText">Loading your readiness status…</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Missing Skills</h3></div>
+      <ul id="readinessMissingList" style="padding-left:18px;font-size:13.5px;color:var(--text-soft);display:flex;flex-direction:column;gap:8px;">
+        <li>Loading…</li>
+      </ul>
+      <div class="card-head" style="margin-top:20px;"><h3>Recommendations</h3></div>
+      <ul id="readinessRecommendationsList" style="padding-left:18px;font-size:13.5px;color:var(--text-soft);display:flex;flex-direction:column;gap:8px;">
+        <li>Loading…</li>
+      </ul>
+      <button class="btn btn-teal btn-sm" style="margin-top:16px;" data-page="roadmap">View Full Roadmap →</button>
+    </div>
+  </div>
+
+  <div class="section-head"><div><h2>Placement Readiness Roadmap</h2><p>The dynamic set of milestones between you and Placement Ready status</p></div></div>
+  <div class="card">
+    <div id="readinessRoadmapTrack" class="roadmap-track">
+      <p class="cell-sub">Loading roadmap…</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: CAREER READINESS ROADMAP
+============================================================ -->
+<section class="page" id="page-roadmap">
+  <div class="section-head"><div><h2>Career Readiness Roadmap</h2><p>Your personalized path to Placement Ready status</p></div></div>
+  <div class="grid grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3>Skill Checklist</h3></div>
+      <div class="roadmap-track" id="roadmapChecklist">
+        <p class="cell-sub">Loading checklist…</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Timeline</h3></div>
+      <div class="skill-row"><span class="label">Current Progress</span><div class="bar-track"><div class="bar-fill" id="roadmapCurrentBar" style="width:0%;"></div></div><span class="value" id="roadmapCurrentValue">—</span></div>
+      <div class="skill-row"><span class="label">Required Progress</span><div class="bar-track"><div class="bar-fill" id="roadmapRequiredBar" style="width:0%;opacity:.4;"></div></div><span class="value" id="roadmapRequiredValue">—</span></div>
+      <div class="card-head" style="margin-top:20px;"><h3>Next Recommended Intervention</h3></div>
+      <p style="font-size:13.5px;color:var(--text-soft);" id="roadmapNextIntervention">Loading…</p>
+      <div class="card-head" style="margin-top:20px;"><h3>Expected Timeline</h3></div>
+      <p style="font-size:13.5px;color:var(--text-soft);" id="roadmapExpectedTimeline">Loading…</p>
+      <div id="roadmapMomentumNote" style="margin-top:22px;padding:16px;border-radius:var(--radius-sm);background:rgba(31,158,147,.08);font-size:13px;color:var(--teal-dark);display:none;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: RANKINGS
+============================================================ -->
+<section class="page" id="page-rankings">
+  <div class="section-head"><div><h2>Rankings</h2><p>See how you stack up across department, college and batch</p></div></div>
+  <div class="grid grid-4" style="margin-bottom:20px;" id="rankingKpiGrid">
+    <div class="card rank-card"><div class="rank-value">—</div><div class="rank-label">Department Rank</div></div>
+    <div class="card rank-card"><div class="rank-value">—</div><div class="rank-label">College Rank</div></div>
+    <div class="card rank-card"><div class="rank-value">—</div><div class="rank-label">Batch Rank</div></div>
+    <div class="card rank-card"><div class="rank-value">—</div><div class="rank-label">Percentile</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3 id="leaderboardTitle">Department Leaderboard</h3><span class="card-sub">Top entries + your position</span></div>
+    <div id="leaderboardBody"><p class="cell-sub">Loading leaderboard…</p></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: ATTENDANCE
+============================================================ -->
+<section class="page" id="page-attendance">
+  <div class="section-head"><div><h2>Attendance Management</h2><p>Your class attendance — marked by the Super Admin</p></div></div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3>Attendance Overview</h3><span class="cell-sub">Overall — all time</span></div>
+    <div class="att-overview">
+      <div id="attendanceRing"></div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Total Classes</div><div class="kpi-value" id="attTotal">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Present</div><div class="kpi-value" id="attPresent">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Absent</div><div class="kpi-value" id="attAbsent">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Last Updated</div><div class="kpi-value" id="attLastUpdated"><span>—</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3>This Month Attendance</h3><span class="cell-sub" id="attMonthLabel">—</span></div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Classes This Month</div><div class="kpi-value" id="attMonthTotal">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Present</div><div class="kpi-value" id="attMonthPresent">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Absent</div><div class="kpi-value" id="attMonthAbsent">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Attendance This Month</div><div class="kpi-value" id="attMonthPct">—</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-head"><h3>Monthly Attendance Graph</h3>
+      <span class="att-legend">
+        <span class="att-legend-dot" style="background:var(--teal);"></span> Present
+        <span class="att-legend-dot" style="background:var(--rose); margin-left:12px;"></span> Absent
+      </span>
+    </div>
+    <div class="att-month-bars" id="attendanceMonthBars"><p class="cell-sub">Loading monthly attendance…</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h3>Attendance History</h3></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Status</th><th>Marked By</th></tr></thead>
+      <tbody id="attendanceHistoryBody">
+        <tr><td colspan="3" class="cell-sub">Loading attendance history…</td></tr>
+      </tbody>
+    </table></div>
+    <div class="pager" id="attendancePager" style="display:none;">
+      <button class="btn btn-ghost btn-sm" id="attPrevBtn" onclick="attPage(-1)">‹ Prev</button>
+      <span id="attPageInfo" class="cell-sub"></span>
+      <button class="btn btn-ghost btn-sm" id="attNextBtn" onclick="attPage(1)">Next ›</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: QUIZ HISTORY
+============================================================ -->
+<section class="page" id="page-quizhistory">
+  <div class="section-head"><div><h2>Quiz History</h2><p>All attempted and pending quizzes</p></div></div>
+  <div class="kpi-grid" style="margin-bottom:20px;" id="quizHistoryKpiGrid">
+    <div class="kpi-card"><div class="kpi-label">Total Quizzes</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Attempted</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Completed</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Average Score</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Highest Score</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Lowest Score</div><div class="kpi-value">—</div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>Recent Assessments</h3></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Quiz</th><th>Date</th><th>Score</th><th>Time Taken</th><th>Interview Marks</th><th>Final Average</th><th>Cohort</th><th>Status</th></tr></thead>
+      <tbody id="quizHistoryBody">
+        <tr><td colspan="8" class="cell-sub">Loading quiz history…</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: REPORTS
+============================================================ -->
+<section class="page" id="page-reports">
+  <div class="section-head"><div><h2>Reports</h2><p>Download official PDF reports for your records</p></div></div>
+  <div class="grid grid-3">
+    <div class="card"><div class="card-head"><h3>Assessment Report</h3></div><p class="cell-sub" style="margin-bottom:14px;">Latest: Final Assessment, 18 May 2026</p><button class="btn btn-ghost btn-sm" onclick="showToast('Assessment Report.pdf downloading','success')">⬇ Export PDF</button></div>
+    <div class="card"><div class="card-head"><h3>Progress Report</h3></div><p class="cell-sub" style="margin-bottom:14px;">Baseline → Mid → Final trend summary</p><button class="btn btn-ghost btn-sm" onclick="showToast('Progress Report.pdf downloading','success')">⬇ Export PDF</button></div>
+    <div class="card"><div class="card-head"><h3>Attendance Report</h3></div><p class="cell-sub" style="margin-bottom:14px;">Academic + workshop + intervention</p><button class="btn btn-ghost btn-sm" onclick="showToast('Attendance Report.pdf downloading','success')">⬇ Export PDF</button></div>
+    <div class="card"><div class="card-head"><h3>Participation Report</h3></div><p class="cell-sub" style="margin-bottom:14px;">Workshop & quiz participation summary</p><button class="btn btn-ghost btn-sm" onclick="showToast('Participation Report.pdf downloading','success')">⬇ Export PDF</button></div>
+    <div class="card"><div class="card-head"><h3>Placement Readiness Report</h3></div><p class="cell-sub" style="margin-bottom:14px;">Current status, thresholds and roadmap</p><button class="btn btn-ghost btn-sm" onclick="showToast('Placement Readiness Report.pdf downloading','success')">⬇ Export PDF</button></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: NOTIFICATIONS
+============================================================ -->
+<section class="page" id="page-notifications">
+  <div class="section-head"><div><h2>Notifications</h2><p>Everything relevant to you, in one place</p></div></div>
+  <div class="card">
+    <div id="notificationsFullList"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: CALENDAR
+============================================================ -->
+<section class="page" id="page-calendar">
+  <div class="section-head"><div><h2>Calendar</h2><p>Assessment dates, workshops, events and deadlines</p></div></div>
+  <div class="card">
+    <div class="calendar-head">
+      <h3 style="font-size:16px;">—</h3>
+      <div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="changeCalendarMonth(-1)">‹ Prev</button><button class="btn btn-ghost btn-sm" onclick="changeCalendarMonth(1)">Next ›</button></div>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: PROFILE
+============================================================ -->
+<section class="page" id="page-profile">
+  <div class="section-head">
+    <div><h2>Profile</h2><p>Keep your details current — colleges and recruiters see this</p></div>
+    <div class="kpi-card" style="padding:12px 18px;min-width:170px;">
+      <div class="kpi-label">Profile Completion</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;"><div class="bar-track" style="height:7px;"><div class="bar-fill" id="profileCompletionBar" style="width:0%;"></div></div><span style="font-family:var(--font-mono);font-weight:700;font-size:12.5px;" id="profileCompletionValue">—</span></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3>Editable Details</h3><span class="card-sub" id="profileEditLockNote"></span></div>
+      <form id="profileForm">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:22px;">
+          <div class="profile-strip-avatar" id="profilePhotoPreview" style="width:58px;height:58px;font-size:20px;">—</div>
+          <div>
+            <button type="button" class="btn btn-ghost btn-sm" id="changePhotoBtn" onclick="document.getElementById('profilePhotoInput').click()">Change Photo</button>
+            <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><input type="tel" id="fieldPhone" placeholder=" "><label>Phone Number</label></div>
+          <div class="field"><input type="email" id="fieldEmail" placeholder=" "><label>Email</label></div>
+        </div>
+        <div class="field"><input type="text" id="fieldAddress" placeholder=" "><label>Address</label></div>
+        <div class="field-row">
+          <div class="field"><input type="url" id="fieldLinkedin" placeholder=" "><label>LinkedIn</label></div>
+          <div class="field"><input type="url" id="fieldGithub" placeholder=" "><label>GitHub</label></div>
+        </div>
+        <div class="field"><input type="url" id="fieldPortfolio" placeholder=" "><label>Portfolio</label></div>
+        <div class="field"><textarea id="fieldObjective" placeholder=" "></textarea><label>Career Objective</label></div>
+        <div class="chip-input-row" id="skillChipsRow">
+          <span class="chip">＋ Add Skill</span>
+        </div>
+        <div class="chip-input-row" id="languageChipsRow">
+          <span class="chip">＋ Add Language</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary" id="profileSaveBtn">Save Changes</button>
+          <button type="button" class="btn btn-ghost" onclick="loadProfile()">Cancel</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Non-Editable Details</h3><span class="card-sub">Managed by College Admin</span></div>
+      <div class="field locked"><input id="fieldRollNumber" disabled placeholder=" "><label>Roll Number</label></div>
+      <div class="field locked"><input id="fieldDepartment" disabled placeholder=" "><label>Department</label></div>
+      <div class="field locked"><input id="fieldCollege" disabled placeholder=" "><label>College</label></div>
+      <div class="field locked"><input id="fieldYear" disabled placeholder=" "><label>Year</label></div>
+      <div class="field locked"><input id="fieldRegNumber" disabled placeholder=" "><label>Registration Number</label></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE: SETTINGS
+============================================================ -->
+<section class="page" id="page-settings">
+  <div class="section-head"><div><h2>Settings</h2><p>Preferences, notifications and security</p></div></div>
+  <div class="grid grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-head"><h3>Appearance</h3></div>
+      <div class="field-row">
+        <div class="field select-field"><label>Theme</label><select id="themeSelect"><option value="light">Light</option><option value="dark">Dark</option></select></div>
+        <div class="field select-field"><label>Language</label><select><option>English</option><option>Tamil</option><option>Hindi</option></select></div>
+      </div>
+      <div class="card-head" style="margin-top:10px;"><h3>Notification Preferences</h3></div>
+      <label class="checkbox-wrap"><input type="checkbox" checked> Assessment openings & deadlines</label>
+      <label class="checkbox-wrap"><input type="checkbox" checked> Workshop & intervention schedules</label>
+      <label class="checkbox-wrap"><input type="checkbox" checked> Result publications</label>
+      <label class="checkbox-wrap"><input type="checkbox"> Placement news & announcements</label>
+      <button class="btn btn-primary btn-sm" style="margin-top:6px;" onclick="showToast('Preferences saved','success')">Save Preferences</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Privacy</h3></div>
+      <label class="checkbox-wrap"><input type="checkbox" checked> Allow trainer to view my detailed reports</label>
+      <label class="checkbox-wrap"><input type="checkbox" checked> Show my name on department leaderboard</label>
+      <div class="card-head" style="margin-top:18px;"><h3>Security — Change Password</h3></div>
+      <div class="field"><input type="password" id="currentPasswordField" placeholder=" "><label>Current Password</label></div>
+      <div class="field-row">
+        <div class="field"><input type="password" id="newPasswordField" placeholder=" "><label>New Password</label></div>
+        <div class="field"><input type="password" id="confirmPasswordField" placeholder=" "><label>Confirm New Password</label></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="updatePasswordBtn" onclick="requestPasswordOtp()">Update Password</button>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE SECTIONS INJECTED BELOW -->
+</main>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+<div class="modal-overlay" id="modalInstructions">
+  <div class="modal">
+    <div class="modal-head"><h3>Assessment Instructions</h3><button class="modal-close" onclick="closeModal('modalInstructions')">✕</button></div>
+    <ul style="padding-left:18px;font-size:13.5px;color:var(--text-soft);display:flex;flex-direction:column;gap:9px;">
+      <li>Ensure a stable internet connection before starting.</li>
+      <li>The assessment must be taken on a desktop or laptop in full-screen mode.</li>
+      <li>You get a maximum of 3 tab/window switches before auto-submission.</li>
+      <li>Answers auto-save every 10 seconds — no manual save needed.</li>
+      <li>Once submitted, the assessment cannot be reopened or edited.</li>
+    </ul>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modalInstructions')">Close</button><button class="btn btn-primary" onclick="closeModal('modalInstructions'); startExam();">I Understand, Continue</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPasswordOtp">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3>Verify OTP</h3><button class="modal-close" onclick="closeModal('modalPasswordOtp')">✕</button></div>
+    <p style="font-size:13.5px;color:var(--text-soft);margin-bottom:16px;" id="passwordOtpMessage">Enter the OTP sent to your registered contact to confirm this password change.</p>
+    <div class="field"><input type="text" id="passwordOtpInput" inputmode="numeric" maxlength="6" placeholder=" "><label>One-Time Password</label></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalPasswordOtp')">Cancel</button>
+      <button class="btn btn-primary" id="verifyOtpBtn" onclick="verifyPasswordOtp()">Verify & Update Password</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalWorkshop">
+  <div class="modal">
+    <div class="modal-head"><h3 id="workshopModalTitle">Workshop</h3><button class="modal-close" onclick="closeModal('modalWorkshop')">✕</button></div>
+    <p style="font-size:13.5px;color:var(--text-soft);margin-bottom:14px;" id="workshopModalDescription">—</p>
+    <div class="table-wrap"><table><tbody id="workshopModalDetailsBody">
+      <tr><td class="cell-sub">Trainer</td><td class="cell-strong">—</td></tr>
+    </tbody></table></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modalWorkshop')">Close</button><button class="btn btn-teal" onclick="closeModal('modalWorkshop'); showToast('Added to calendar','success')">＋ Add to Calendar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalConfirmSubmit">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head"><h3>Submit Assessment?</h3></div>
+    <p style="font-size:13.5px;color:var(--text-soft);">You have answered <strong id="confirmAnsweredCount" style="color:var(--text);">6 of 25</strong> questions. Once submitted, you cannot make further changes.</p>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modalConfirmSubmit')">Go Back</button><button class="btn btn-danger" onclick="finalSubmitExam()">Submit Now</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalViolation">
+  <div class="modal" style="max-width:420px;text-align:center;">
+    <div style="font-size:34px;margin-bottom:10px;">⚠️</div>
+    <h3 id="violationTitle" style="margin-bottom:8px;">Warning 1</h3>
+    <p style="font-size:13.5px;color:var(--text-soft);" id="violationMessage">Tab switch detected. 2 switches remaining before auto-submission.</p>
+    <div class="modal-actions" style="justify-content:center;"><button class="btn btn-primary" onclick="closeModal('modalViolation')">Return to Exam</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalExamSubmitted">
+  <div class="modal" style="max-width:440px;text-align:center;">
+    <div class="success-mark" style="width:64px;height:64px;border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--teal),var(--teal-dark));">
+      <span style="color:#fff;font-size:26px;">✓</span>
+    </div>
+    <h3 style="margin-bottom:8px;">Assessment Submitted</h3>
+    <p style="font-size:13.5px;color:var(--text-soft);" id="examSubmittedReason">Your responses have been recorded. Results will be published once evaluation is complete.</p>
+    <div class="modal-actions" style="justify-content:center;"><button class="btn btn-primary" onclick="closeModal('modalExamSubmitted'); goToPage('assessments');">Back to Assessments</button></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST CONTAINER
+============================================================ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="auth-common.js"></script>
+<script>
+/* ============================================================
+   0. LOADER
+============================================================ */
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 350);
+});
+
+/* ============================================================
+   1. THEME TOGGLE (persisted — standalone deliverable, not a Claude artifact)
+============================================================ */
+const root = document.documentElement;
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(t){
+  root.setAttribute('data-theme', t);
+  localStorage.setItem('eip_theme', t);
+  themeToggle.textContent = t === 'dark' ? '☀️' : '🌙';
+  const sel = document.getElementById('themeSelect');
+  if (sel) sel.value = t;
+}
+applyTheme(localStorage.getItem('eip_theme') || 'light');
+themeToggle.addEventListener('click', () => applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+document.addEventListener('change', (e) => { if (e.target.id === 'themeSelect') applyTheme(e.target.value); });
+
+/* ============================================================
+   1a. SESSION GUARD — now provided by auth-common.js (see <script
+   src="auth-common.js"> above), which also supplies the shared
+   EIP.logout() implementation and the bfcache Back-button guard.
+   Kept as a single implementation instead of one inline copy per
+   dashboard — see that file's header comment for details.
+============================================================ */
+
+/* ============================================================
+   1b. API INTEGRATION HELPERS — wired to /api/student (+ /api/auth/me)
+   Same fetch pattern as login.html: cookie-based JWT, credentials:'include'.
+============================================================ */
+const API_BASE = '/api/student';
+const AUTH_API_BASE = '/api/auth';
+
+async function apiGet(path, base){
+  try {
+    const res = await fetch((base || API_BASE) + path, { method: 'GET', credentials: 'include' });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    return { ok: false, status: 0, data: { message: 'Could not reach the server. Please try again.' } };
+  }
+}
+async function apiPost(path, body, base){
+  try {
+    const res = await fetch((base || API_BASE) + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body || {})
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    return { ok: false, status: 0, data: { message: 'Could not reach the server. Please try again.' } };
+  }
+}
+
+/* ============================================================
+   2. PAGE TITLES + ROUTING
+============================================================ */
+const pageTitles = {
+  dashboard:['Overview','Dashboard Home'], assessments:['Assessments','My Assessments'],
+  quizhistory:['Assessments','Quiz History'], cohort:['Growth','My Cohort'], workshops:['Growth','Workshops & Interventions'],
+  progress:['Growth','Progress Dashboard'], readiness:['Growth','Placement Readiness'], roadmap:['Growth','Career Readiness Roadmap'],
+  rankings:['Growth','Rankings'], attendance:['Activity','Attendance Management'], events:['Activity','Events'], calendar:['Activity','Calendar'],
+  notifications:['Activity','Notifications'], reports:['Account','Reports'], profile:['Account','Profile'], settings:['Account','Settings']
+};
+function goToPage(name){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-' + name);
+  if (!target) return;
+  target.classList.add('active');
+  if (typeof initScrollReveal === 'function') initScrollReveal(target);
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.toggle('active', n.dataset.page === name));
+  const meta = pageTitles[name] || ['Student', name];
+  document.getElementById('breadcrumb').textContent = 'Student · ' + meta[0];
+  document.getElementById('pageTitle').textContent = meta[1];
+  document.getElementById('pageContent').scrollTo({top:0, behavior:'smooth'});
+  window.scrollTo({top:0, behavior:'smooth'});
+  closeSidebar();
+  if (name === 'assessments' && !window.__assessmentsLoaded){ loadAssessments(); window.__assessmentsLoaded = true; }
+  if (name === 'progress' && !window.__progressLoaded){ loadProgressDashboard(); window.__progressLoaded = true; }
+  if (name === 'attendance' && !window.__attendanceLoaded){ loadAttendance(); window.__attendanceLoaded = true; }
+  if (name === 'calendar' && !window.__calDrawn){ buildCalendar(); window.__calDrawn = true; }
+  // Quiz History stats (Total/Attempted/Completed/Pending) must always reflect
+  // live backend data — no once-only cache guard here (unlike the other pages
+  // above), so every visit recomputes from the database with no manual refresh.
+  if (name === 'quizhistory'){ loadQuizHistory(); }
+  if (name === 'cohort' && !window.__cohortPageLoaded){ loadCohortPage(); window.__cohortPageLoaded = true; }
+  if (name === 'workshops' && !window.__workshopsLoaded){ loadWorkshops(); window.__workshopsLoaded = true; }
+  if (name === 'events' && !window.__eventsLoaded){ loadEvents(); window.__eventsLoaded = true; }
+  if (name === 'readiness' && !window.__readinessLoaded){ loadReadiness(); window.__readinessLoaded = true; }
+  if (name === 'roadmap' && !window.__roadmapLoaded){ loadRoadmap(); window.__roadmapLoaded = true; }
+  if (name === 'rankings' && !window.__rankingsLoaded){ loadRankings(); window.__rankingsLoaded = true; }
+  if (name === 'profile' && !window.__profileLoaded){ loadProfile(); window.__profileLoaded = true; }
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-page]');
+  if (el){ e.preventDefault(); goToPage(el.dataset.page); }
+});
+
+/* ============================================================
+   3. SIDEBAR (mobile) + HAMBURGER
+============================================================ */
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+function openSidebar(){
+  sidebar.classList.add('open'); sidebarOverlay.classList.add('show');
+  hamburgerBtn.classList.add('is-open'); hamburgerBtn.setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = window.innerWidth <= 980 ? 'hidden' : '';
+}
+function closeSidebar(){
+  sidebar.classList.remove('open'); sidebarOverlay.classList.remove('show');
+  hamburgerBtn.classList.remove('is-open'); hamburgerBtn.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
+hamburgerBtn.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+sidebarOverlay.addEventListener('click', closeSidebar);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar(); });
+
+/* ============================================================
+   4. TABS (data-tab groups)
+============================================================ */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const group = tab.parentElement;
+    group.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    if (tab.dataset.tab.startsWith('assess-')){
+      renderAssessments(tab.dataset.tab.replace('assess-', ''));
+      return;
+    }
+    // find sibling tab-panels by naming convention (id starts with prefix before '-')
+    const key = tab.dataset.tab.split('-')[0];
+    document.querySelectorAll(`.tab-panel[id^="${key}-"]`).forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById(tab.dataset.tab);
+    if (panel) panel.classList.add('active');
+  });
+});
+
+/* ============================================================
+   5. MODALS
+============================================================ */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', (e) => { if (e.target === ov) ov.classList.remove('show'); });
+});
+
+/* ============================================================
+   6. TOASTS
+============================================================ */
+function showToast(msg, type){
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  t.innerHTML = `<span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.classList.add('toast-fade'); setTimeout(() => t.remove(), 350); }, 3200);
+}
+
+/* ============================================================
+   7. NOTIFICATIONS — dropdown + full page (data-driven)
+============================================================ */
+let notifications = [];
+function renderNotifications(){
+  const dropdown = document.getElementById('notifPanelList');
+  const full = document.getElementById('notificationsFullList');
+  const rowHTML = (n) => `<div class="notif-item ${n.unread ? 'unread' : ''}"><div class="notif-icon">${n.icon || '🔔'}</div><div class="notif-body"><strong>${n.title}</strong>${n.body || ''}<div class="notif-time">${n.time || ''}</div></div></div>`;
+  const emptyHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><h4>No new notifications.</h4></div>';
+  dropdown.innerHTML = notifications.length ? notifications.slice(0,5).map(rowHTML).join('') : emptyHTML;
+  if (full) full.innerHTML = notifications.length ? notifications.map(rowHTML).join('') : emptyHTML;
+  const unreadCount = notifications.filter(n => n.unread).length;
+  const navBadge = document.getElementById('navNotifBadge');
+  if (navBadge){ navBadge.textContent = unreadCount; navBadge.style.display = unreadCount ? '' : 'none'; }
+}
+async function loadNotifications(){
+  const { ok, data } = await apiGet('/notifications');
+  notifications = ok ? (data.notifications || []) : [];
+  renderNotifications();
+}
+loadNotifications();
+const notifBtn = document.getElementById('notifBtn');
+const notifPanel = document.getElementById('notifPanel');
+notifBtn.addEventListener('click', (e) => { e.stopPropagation(); notifPanel.classList.toggle('show'); });
+document.addEventListener('click', (e) => { if (!notifPanel.contains(e.target) && e.target !== notifBtn) notifPanel.classList.remove('show'); });
+
+/* ============================================================
+   8. RECENT ACTIVITY (Dashboard Home) — live from backend
+============================================================ */
+async function loadRecentActivity(){
+  const list = document.getElementById('recentActivityList');
+  const { ok, data } = await apiGet('/activity');
+  const activity = ok ? (data.activity || []) : [];
+  list.innerHTML = activity.length
+    ? activity.map(a => `<div class="notif-item"><div class="notif-icon">${a.icon || '📌'}</div><div class="notif-body"><strong>${a.title}</strong><div class="notif-time">${a.time || ''}</div></div></div>`).join('')
+    : '<div class="empty-state"><div class="empty-icon">🗒️</div><h4>No recent activity available.</h4></div>';
+}
+loadRecentActivity();
+
+/* ============================================================
+   9. LIGHTWEIGHT SVG CHARTS (no external libs, theme-aware)
+============================================================ */
+function svgWrap(w,h,inner){ return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`; }
+function drawBarChart(container, labels, values, max){
+  const w=520,h=240,pad=36,bw=(w-pad*2)/values.length;
+  let bars='';
+  values.forEach((v,i)=>{
+    const bh=(v/max)*(h-pad*2);
+    const x=pad+i*bw+bw*0.18, y=h-pad-bh;
+    bars+=`<rect x="${x}" y="${y}" width="${bw*0.64}" height="${bh}" rx="8" fill="url(#gradBar)" filter="url(#barShadow)"></rect>
+           <text x="${x+bw*0.32}" y="${h-pad+16}" text-anchor="middle" font-size="10" fill="var(--text-soft)">${labels[i]}</text>
+           <text x="${x+bw*0.32}" y="${y-6}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">${v}</text>`;
+  });
+  document.getElementById(container).innerHTML = svgWrap(w,h,`
+    <defs><linearGradient id="gradBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FB923C"/><stop offset="100%" stop-color="#F59E0B"/></linearGradient><filter id="barShadow" x="-40%" y="-20%" width="180%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#C2670A" flood-opacity="0.22"/></filter></defs>
+    <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="var(--line)"/>${bars}`);
+}
+function drawRadarChart(container, labels, values, max){
+  const w=380,h=320,cx=w/2,cy=h/2-6,r=110,n=values.length;
+  const pt=(i,val)=>{ const ang=(Math.PI*2*i/n)-Math.PI/2; const rad=(val/max)*r; return [cx+rad*Math.cos(ang), cy+rad*Math.sin(ang)]; };
+  let rings=''; for(let k=1;k<=4;k++){ let ringPts=[]; for(let i=0;i<n;i++){ const ang=(Math.PI*2*i/n)-Math.PI/2; ringPts.push([cx+(r*k/4)*Math.cos(ang), cy+(r*k/4)*Math.sin(ang)]); } rings+=`<polygon points="${ringPts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--line)" stroke-width="1"/>`; }
+  let poly=[], labelsSvg='';
+  values.forEach((v,i)=>{ poly.push(pt(i,v).join(',')); const lp=pt(i,max*1.18); labelsSvg+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="middle" font-size="10.5" fill="var(--text-soft)">${labels[i]}</text>`; });
+  document.getElementById(container).innerHTML = svgWrap(w,h,`<defs><linearGradient id="gradRadar" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FB923C" stop-opacity="0.38"/><stop offset="100%" stop-color="#F59E0B" stop-opacity="0.16"/></linearGradient></defs>${rings}<polygon points="${poly.join(' ')}" fill="url(#gradRadar)" stroke="var(--amber-dark)" stroke-width="2.25"/>${poly.map(p=>`<circle cx="${p.split(',')[0]}" cy="${p.split(',')[1]}" r="3.5" fill="var(--amber-dark)"/>`).join('')}${labelsSvg}`);
+}
+function smoothPath(pts){
+  if(pts.length<3) return 'M'+pts.map(p=>p.join(',')).join(' L ');
+  let d=`M${pts[0][0]},${pts[0][1]}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i], p1=pts[i+1];
+    const mx=(p0[0]+p1[0])/2;
+    d+=` C${mx},${p0[1]} ${mx},${p1[1]} ${p1[0]},${p1[1]}`;
+  }
+  return d;
+}
+function drawLineChartSVG(container, labels, series1, series2, max){
+  const w=680,h=260,pad=40;
+  const stepX=(w-pad*2)/(labels.length-1);
+  const toPts=(arr)=>arr.map((v,i)=>[pad+i*stepX, h-pad-(v/max)*(h-pad*2)]);
+  const p1=toPts(series1), p2=toPts(series2);
+  const linePath=(pts)=>smoothPath(pts);
+  const areaPath=(pts)=>smoothPath(pts)+` L${pts[pts.length-1][0]},${h-pad} L${pts[0][0]},${h-pad} Z`;
+  let grid=''; for(let g=0;g<=4;g++){ const y=pad+g*((h-pad*2)/4); grid+=`<line x1="${pad}" y1="${y}" x2="${w-pad}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`; }
+  let xlabels = labels.map((l,i)=>`<text x="${pad+i*stepX}" y="${h-12}" text-anchor="middle" font-size="10.5" fill="var(--text-soft)">${l}</text>`).join('');
+  let dots1 = p1.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#fff" stroke="var(--amber-dark)" stroke-width="2.5"/><text x="${p[0]}" y="${p[1]-14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--amber-dark)">${series1[i]}</text>`).join('');
+  let dots2 = p2.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--paper)" stroke="var(--text-soft)" stroke-width="2"/>`).join('');
+  document.getElementById(container).innerHTML = svgWrap(w,h,`
+    <defs>
+      <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.30"/>
+        <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <path d="${areaPath(p1)}" fill="url(#areaFill)"/>
+    <path d="${linePath(p2)}" fill="none" stroke="var(--text-soft)" stroke-width="2" stroke-dasharray="4 5"/>
+    <path d="${linePath(p1)}" fill="none" stroke="var(--amber-dark)" stroke-width="3" stroke-linecap="round"/>
+    ${dots2}${dots1}${xlabels}`);
+  document.getElementById(container).insertAdjacentHTML('afterend', `<div class="chart-legend"><span><span class="legend-dot" style="background:var(--amber-dark);"></span>Your Score</span><span><span class="legend-dot" style="background:var(--text-soft);"></span>Cohort Avg</span></div>`);
+}
+/* ============================================================
+   9e. PROGRESS DASHBOARD — live data
+============================================================ */
+async function loadProgressDashboard(){
+  const { ok, data } = await apiGet('/progress');
+  const lineBox = document.getElementById('lineChartBox');
+  if (!ok || !data || !(data.stages && data.stages.length)){
+    lineBox.innerHTML = '<div class="empty-state"><div class="empty-icon">📈</div><h4>No growth trajectory available yet.</h4></div>';
+  } else {
+    document.getElementById('growthTrajectorySub').textContent = data.stages.map(s => `${s.label} ${s.score}`).join(' → ');
+    lineBox.innerHTML = '';
+    drawLineChartSVG('lineChartBox', data.stages.map(s=>s.label), data.stages.map(s=>s.score), data.stages.map(s=>s.cohortAvg ?? 0), 100);
+  }
+
+  const dimEl = document.getElementById('growthByDimension');
+  const dims = (ok && data.growthByDimension) || [];
+  dimEl.innerHTML = dims.length
+    ? dims.map(d => `<div class="skill-row"><span class="label">${d.name}</span><div class="bar-track"><div class="bar-fill" style="width:${d.score}%;"></div></div><span class="value">${d.change >= 0 ? '+' : ''}${d.change}</span></div>`).join('')
+    : '<p class="cell-sub">No dimension growth data yet.</p>';
+
+  const trendEl = document.getElementById('attendanceParticipationTrend');
+  const trend = (ok && data.attendanceTrend) || [];
+  trendEl.innerHTML = trend.length
+    ? trend.map(t => `<div class="skill-row"><span class="label">${t.label}</span><div class="bar-track"><div class="bar-fill solid-teal" style="width:${t.value}%;"></div></div><span class="value">${t.value}%</span></div>`).join('')
+    : '<p class="cell-sub">No attendance trend data yet.</p>';
+}
+
+/* ============================================================
+   9f. ATTENDANCE PAGE — live data
+============================================================ */
+async function loadAttendance(){
+  const { ok, data } = await apiGet('/attendance');
+  const ringEl = document.getElementById('attendanceRing');
+  const historyBody = document.getElementById('attendanceHistoryBody');
+  if (!ok || !data){
+    ringEl.innerHTML = '<p class="cell-sub">Attendance unavailable right now.</p>';
+    historyBody.innerHTML = '<tr><td colspan="3" class="cell-sub">Could not load attendance history.</td></tr>';
+    return;
+  }
+  const att = data.attendance || {};
+  const total = att.total ?? 0;
+  const present = att.present ?? 0;
+  const absent = att.absent ?? 0;
+  const pct = Math.round(att.percentage ?? 0);
+  ringEl.innerHTML = attendanceRing(total > 0 ? pct : null);
+  document.getElementById('attTotal').textContent = total;
+  document.getElementById('attPresent').textContent = present;
+  document.getElementById('attAbsent').textContent = absent;
+  document.getElementById('attLastUpdated').innerHTML = att.lastUpdated
+    ? `<span>${fmtDate(att.lastUpdated)} · ${fmtTime(att.lastUpdated)}</span>`
+    : '<span>Not marked yet</span>';
+
+  const tm = att.thisMonth || {};
+  const tmLabel = tm.month ? monthLabel(tm.month) : '—';
+  document.getElementById('attMonthLabel').textContent = tmLabel;
+  document.getElementById('attMonthTotal').textContent = tm.total ?? 0;
+  document.getElementById('attMonthPresent').textContent = tm.present ?? 0;
+  document.getElementById('attMonthAbsent').textContent = tm.absent ?? 0;
+  document.getElementById('attMonthPct').textContent = (tm.total || 0) > 0
+    ? `${Math.round(tm.percentage ?? 0)}%`
+    : '—';
+
+  renderAttendanceMonthBars(att.monthly || []);
+
+  window.__attendanceHistory = att.history || [];
+  window.__attPage = 0;
+  renderAttendancePage();
+}
+
+function monthLabel(ym){
+  if (!ym) return '—';
+  const [y, m] = ym.split('-').map(Number);
+  if (!y || !m) return ym;
+  return new Date(y, m - 1, 1).toLocaleString('en', { month: 'short' }) + ' ' + String(y).slice(2);
+}
+
+function renderAttendanceMonthBars(monthly){
+  const el = document.getElementById('attendanceMonthBars');
+  if (!monthly.length){
+    el.innerHTML = '<p class="cell-sub" style="padding:16px;">No monthly data yet — classes marked by the Super Admin will appear here.</p>';
+    return;
+  }
+  const maxTotal = Math.max(1, ...monthly.map(m => m.total || 0));
+  el.innerHTML = monthly.map(m => {
+    const p = m.present || 0, a = m.absent || 0, t = m.total || 0;
+    const pct = t ? Math.round((p / t) * 100) : 0;
+    const pH = (p / maxTotal) * 100, aH = (a / maxTotal) * 100;
+    return `<div class="att-month-col">
+      <div class="att-bar-area">
+        <div class="att-bar-wrap" title="${p} Present · ${a} Absent">
+          ${p > 0 ? `<div class="att-bar-seg teal" style="height:${pH}%;"></div>` : ''}
+          ${a > 0 ? `<div class="att-bar-seg rose" style="height:${aH}%;"></div>` : ''}
+        </div>
+      </div>
+      <div class="att-month-meta"><b>${monthLabel(m.month)}</b><span>${p}/${t} · ${pct}%</span></div>
+    </div>`;
+  }).join('');
+}
+
+function attendanceRing(pct){
+  const size = 176, stroke = 14;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const hasData = typeof pct === 'number';
+  const val = Math.max(0, Math.min(100, pct || 0));
+  const filled = (val / 100) * c;
+  const color = hasData ? (val >= 75 ? 'var(--teal)' : val >= 50 ? 'var(--amber-dark)' : 'var(--rose)') : 'var(--line)';
+  return `
+    <div class="att-ring-wrap">
+      <svg class="att-ring" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <circle class="att-ring-bg" cx="${size/2}" cy="${size/2}" r="${r}"></circle>
+        ${hasData ? `<circle class="att-ring-fill" stroke="${color}" cx="${size/2}" cy="${size/2}" r="${r}" stroke-dasharray="${filled.toFixed(2)} ${c.toFixed(2)}"></circle>` : ''}
+      </svg>
+      <div class="att-ring-center"><b>${hasData ? val + '%' : '—'}</b><span>Overall Attendance</span></div>
+    </div>`;
+}
+
+function renderAttendancePage(){
+  const history = window.__attendanceHistory || [];
+  const pageSize = 10;
+  const pages = Math.max(1, Math.ceil(history.length / pageSize));
+  const page = Math.min(Math.max(0, window.__attPage || 0), pages - 1);
+  window.__attPage = page;
+  const slice = history.slice(page * pageSize, page * pageSize + pageSize);
+  const body = document.getElementById('attendanceHistoryBody');
+  body.innerHTML = slice.length
+    ? slice.map(h => {
+        const present = h.status === 'present';
+        return `<tr><td>${fmtDate(h.date) || h.date}</td><td><span class="badge ${present ? 'badge-teal' : 'badge-rose'}">${present ? 'Present' : 'Absent'}</span></td><td class="cell-sub">${h.markedBy || '—'}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="3" class="cell-sub">No attendance records yet — classes marked by the Super Admin will appear here.</td></tr>';
+  const pager = document.getElementById('attendancePager');
+  const info = document.getElementById('attPageInfo');
+  if (history.length > pageSize){
+    pager.style.display = 'flex';
+    info.textContent = `Page ${page + 1} of ${pages}`;
+    document.getElementById('attPrevBtn').disabled = page <= 0;
+    document.getElementById('attNextBtn').disabled = page >= pages - 1;
+  } else {
+    pager.style.display = 'none';
+  }
+}
+
+function attPage(dir){
+  const history = window.__attendanceHistory || [];
+  const pages = Math.max(1, Math.ceil(history.length / 10));
+  window.__attPage = Math.min(Math.max(0, (window.__attPage || 0) + dir), pages - 1);
+  renderAttendancePage();
+}
+
+/* ============================================================
+   9g. QUIZ HISTORY — live data
+============================================================ */
+async function loadQuizHistory(){
+  const [{ ok, data }, resultsRes] = await Promise.all([apiGet('/quiz-history'), apiGet('/quiz-results')]);
+  const kpiGrid = document.getElementById('quizHistoryKpiGrid');
+  const body = document.getElementById('quizHistoryBody');
+  if (!ok || !data){
+    body.innerHTML = '<tr><td colspan="8" class="cell-sub">Could not load quiz history.</td></tr>';
+    return;
+  }
+  const s = data.stats || {};
+  kpiGrid.innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Total Quizzes</div><div class="kpi-value">${s.total ?? '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Attempted</div><div class="kpi-value">${s.attempted ?? '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Completed</div><div class="kpi-value">${s.completed ?? '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">${s.pending ?? '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Average Score</div><div class="kpi-value">${s.average != null ? s.average+'%' : '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Highest Score</div><div class="kpi-value">${s.highest != null ? s.highest+'%' : '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Lowest Score</div><div class="kpi-value">${s.lowest != null ? s.lowest+'%' : '—'}</div></div>`;
+
+  // Marks Management: interview marks / final average / assigned cohort /
+  // workflow status, keyed by quizId so it lines up with the base row.
+  const resultByQuiz = {};
+  if (resultsRes.ok && resultsRes.data){
+    (resultsRes.data.results || []).forEach(r => { resultByQuiz[r.quizId] = r; });
+  }
+  const statusBadgeClass = { 'Interview Pending': 'badge-amber', 'Interview Completed': 'badge-teal', 'Validated': 'badge-ink' };
+
+  const quizzes = data.quizzes || [];
+  body.innerHTML = quizzes.length
+    ? quizzes.map(q => {
+        const r = resultByQuiz[q.quizId];
+        const interviewCell = r && r.interviewMarks != null ? r.interviewMarks + '%' : '—';
+        const avgCell = r && r.finalAverage != null ? r.finalAverage + '%' : '—';
+        const cohortCell = r && r.cohort ? `<span class="badge badge-ink">${r.cohort}</span>` : '—';
+        const statusLabel = r ? r.status : q.status;
+        const statusCls = r ? (statusBadgeClass[r.status] || 'badge-ink') : (q.status === 'Completed' ? 'badge-teal' : q.status === 'In Progress' ? 'badge-amber' : 'badge-ink');
+        // Part 4/9 — "Completed in XX Minutes": timeTakenSeconds is
+        // computed once at submission (submittedAt - startedAt) and
+        // stored permanently on the attempt; never re-derived here.
+        const timeTakenCell = fmtMinutesTaken(q.timeTakenSeconds) || '—';
+        return `<tr><td class="cell-strong">${q.name}</td><td>${q.date ? fmtDate(q.date) : (q.dateLabel || '—')}</td><td>${q.score != null ? q.score+'%' : '—'}</td><td>${timeTakenCell}</td><td>${interviewCell}</td><td>${avgCell}</td><td>${cohortCell}</td><td><span class="badge ${statusCls}">${statusLabel}</span></td></tr>`;
+      }).join('')
+    : '<tr><td colspan="8" class="cell-sub">No recent assessments available.</td></tr>';
+}
+
+/* ============================================================
+   9h. MY COHORT — live data
+============================================================ */
+async function loadCohortPage(){
+  const { ok, data } = await apiGet('/cohort-status');
+  const badge = document.getElementById('cohortBadge');
+  const reasonText = document.getElementById('cohortReasonText');
+  const bars = document.getElementById('cohortDimensionBars');
+  const workshopsBody = document.getElementById('cohortWorkshopsBody');
+  const interventionsText = document.getElementById('cohortInterventionsText');
+  const outcomeText = document.getElementById('cohortOutcomeText');
+  const progressBar = document.getElementById('cohortProgressBar');
+  const progressValue = document.getElementById('cohortProgressValue');
+  const overallScoreEl = document.getElementById('cohortOverallScoreValue');
+  const overallCohortEl = document.getElementById('cohortOverallCohortValue');
+
+  if (!ok || !data){
+    reasonText.textContent = 'Could not load your cohort details right now.';
+    return;
+  }
+
+  // Task 4: Overall Percentage + Overall Cohort card — backend-computed,
+  // same values shown on Dashboard Home and Placement Readiness.
+  overallScoreEl.textContent = data.overallScore != null ? `${data.overallScore}%` : '—';
+  overallCohortEl.textContent = data.overallCohortLabel || '—';
+
+  badge.textContent = data.cohortLabel || (data.cohort === 'entry_level' ? 'Entry Level' : `Cohort ${data.cohort}`) || '—';
+  reasonText.textContent = data.reason || 'Your cohort reflects the dimension needing the most attention right now.';
+
+  const dims = data.dimensions || [];
+  bars.innerHTML = dims.length
+    ? dims.map(d => `<div class="skill-row"><span class="label">${d.name}</span><div class="bar-track"><div class="bar-fill ${d.belowThreshold ? 'solid-rose' : ''}" style="width:${d.score}%;"></div></div><span class="value">${d.score}</span></div>`).join('')
+    : '<p class="cell-sub">No dimension data yet.</p>';
+
+  const workshops = data.recommendedWorkshops || [];
+  workshopsBody.innerHTML = workshops.length
+    ? workshops.map(w => `<tr><td class="cell-strong">${w.name}</td><td><span class="badge ${w.status === 'Enrolled' ? 'badge-teal' : w.status === 'Upcoming' ? 'badge-amber' : 'badge-ink'}">${w.status}</span></td></tr>`).join('')
+    : '<tr><td class="cell-sub">No workshops recommended yet.</td></tr>';
+
+  interventionsText.textContent = data.upcomingInterventionsText || 'No interventions scheduled yet.';
+  outcomeText.textContent = data.expectedOutcomeText || 'Your expected outcome will appear once your cohort plan is generated.';
+  const progress = data.currentProgress ?? 0;
+  progressBar.style.width = progress + '%';
+  progressValue.textContent = progress + '%';
+}
+
+/* ============================================================
+   9i. WORKSHOPS & INTERVENTIONS — live data
+============================================================ */
+async function loadWorkshops(){
+  const { ok, data } = await apiGet('/workshops');
+  const upcomingGrid = document.getElementById('workshopsUpcomingGrid');
+  const completedBody = document.getElementById('workshopsCompletedBody');
+  if (!ok || !data){
+    upcomingGrid.innerHTML = '<p class="cell-sub">Could not load workshops right now.</p>';
+    completedBody.innerHTML = '<tr><td colspan="5" class="cell-sub">Could not load workshops right now.</td></tr>';
+    return;
+  }
+  window.__upcomingWorkshops = data.upcoming || [];
+  const upcoming = window.__upcomingWorkshops;
+  upcomingGrid.innerHTML = upcoming.length
+    ? upcoming.map((w, i) => `<div class="card">
+        <div class="card-head"><h3>${w.name}</h3><span class="badge ${w.status === 'Upcoming' ? 'badge-amber' : 'badge-ink'}">${w.status}</span></div>
+        <p class="cell-sub">Trainer: ${w.trainer || 'To be assigned'} · ${w.mode === 'online' ? 'Online' : 'Venue: ' + (w.venue || '—')}</p>
+        <p class="cell-sub">${w.dateLabel || ''}</p>
+        ${w.attendance && w.attendance !== 'Not marked' ? `<p class="cell-sub">Your attendance: <span class="badge ${w.attendance === 'Present' ? 'badge-teal' : 'badge-rose'}">${w.attendance}</span></p>` : ''}
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="openWorkshopModal(${i})">View Details</button>
+          ${w.meetingLink && w.meetingLinkWindowOpen ? `<a class="btn btn-primary btn-sm" href="${w.meetingLink}" target="_blank" rel="noopener">Join Session</a>` : ''}
+        </div>
+      </div>`).join('')
+    : '<div class="empty-state"><div class="empty-icon">🎓</div><h4>No upcoming workshops.</h4></div>';
+
+  const completed = data.completed || [];
+  completedBody.innerHTML = completed.length
+    ? completed.map(w => `<tr><td class="cell-strong">${w.name}</td><td>${w.trainer || '—'}</td><td>${fmtDate(w.date) || w.date || '—'}</td><td>${w.attendance || '—'}</td><td><span class="badge ${w.status === 'Completed' ? 'badge-teal' : 'badge-rose'}">${w.status}</span></td></tr>`).join('')
+    : '<tr><td colspan="5" class="cell-sub">No completed workshops yet.</td></tr>';
+}
+
+function openWorkshopModal(index){
+  const w = (window.__upcomingWorkshops || [])[index];
+  if (!w) return;
+  document.getElementById('workshopModalTitle').textContent = w.name;
+  document.getElementById('workshopModalDescription').textContent = w.description || 'Session details as provided by the platform.';
+  document.getElementById('workshopModalDetailsBody').innerHTML = `
+    <tr><td class="cell-sub">Trainer</td><td class="cell-strong">${w.trainer || 'To be assigned'}</td></tr>
+    <tr><td class="cell-sub">Mode</td><td class="cell-strong">${w.mode === 'online' ? 'Online' : 'Offline'}</td></tr>
+    <tr><td class="cell-sub">Venue</td><td class="cell-strong">${w.mode === 'online' ? '—' : (w.venue || '—')}</td></tr>
+    <tr><td class="cell-sub">Date & Time</td><td class="cell-strong">${w.dateLabel || '—'}</td></tr>
+    <tr><td class="cell-sub">Duration</td><td class="cell-strong">${w.duration || '—'}</td></tr>
+    ${w.attendance && w.attendance !== 'Not marked' ? `<tr><td class="cell-sub">Your Attendance</td><td class="cell-strong">${w.attendance}</td></tr>` : ''}
+    ${w.meetingLink ? `<tr><td class="cell-sub">Join Link</td><td class="cell-strong"><a href="${w.meetingLink}" target="_blank" rel="noopener" style="color:var(--teal-dark);">${w.meetingLinkWindowOpen ? 'Join session' : 'Link available'}</a></td></tr>` : ''}`;
+  openModal('modalWorkshop');
+}
+
+/* ============================================================
+   9j. EVENTS — live data
+============================================================ */
+async function loadEvents(){
+  const grid = document.getElementById('eventsGrid');
+  const { ok, data } = await apiGet('/events');
+  const events = ok ? (data.events || []) : [];
+  window.__events = events;
+  grid.innerHTML = events.length
+    ? events.map(e => `
+        <div class="card">
+          <div class="card-head"><h3>${e.title}</h3><span class="badge ${e.badgeClass || 'badge-ink'}">${e.label || e.badgeText || ''}</span></div>
+          <p class="cell-sub">${e.dateLabel || ''}</p>
+          ${e.description ? `<p class="cell-sub" style="margin-top:6px;">${e.description}</p>` : ''}
+          <p class="cell-sub" style="margin-top:6px;">${e.type === 'online' ? 'Online event' : 'Venue: ' + (e.venue || '—')}${e.mandatory ? ' · <span class="badge badge-rose">Mandatory</span>' : ''}</p>
+          ${e.joined ? `<p class="cell-sub" style="margin-top:6px;"><span class="badge badge-teal">You joined</span></p>` : ''}
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            ${e.status === 'ongoing' && e.type === 'online'
+              ? (e.meetingLink
+                  ? `<button class="btn btn-primary btn-sm" onclick="joinEvent('${e.id}')">${e.joined ? 'Rejoin Session' : 'Join Session'}</button>`
+                  : `<button class="btn btn-ghost btn-sm" disabled>Link not shared yet</button>`)
+              : ''}
+            ${e.status === 'ongoing' && e.type === 'offline'
+              ? `<button class="btn btn-primary btn-sm" onclick="joinEvent('${e.id}')">${e.joined ? 'Mark Me Present' : 'I\u2019m Attending'}</button>`
+              : ''}
+          </div>
+        </div>`).join('')
+    : '<div class="empty-state"><div class="empty-icon">📢</div><h4>No events available right now.</h4></div>';
+}
+
+async function joinEvent(eventId){
+  const { ok, data } = await apiPost('/events/' + eventId + '/join');
+  if (!ok){ alert((data && data.message) || 'Could not join the event right now.'); return; }
+  if (data.meetingLink){
+    window.open(data.meetingLink, '_blank', 'noopener');
+  } else {
+    alert('You\u2019re marked present. See you at the venue!');
+  }
+  loadEvents();
+}
+
+/* ============================================================
+   9k. PLACEMENT READINESS — live data
+============================================================ */
+async function loadReadiness(){
+  const { ok, data } = await apiGet('/readiness');
+  const scoreEl = document.getElementById('readinessScoreValue');
+  const badgeEl = document.getElementById('readinessBadge');
+  const barEl = document.getElementById('readinessBar');
+  const summaryEl = document.getElementById('readinessSummaryText');
+  const missingEl = document.getElementById('readinessMissingList');
+  const recEl = document.getElementById('readinessRecommendationsList');
+  const roadmapEl = document.getElementById('readinessRoadmapTrack');
+  if (!ok || !data){
+    summaryEl.textContent = 'Could not load your readiness status right now.';
+    return;
+  }
+  const score = data.score ?? 0;
+  scoreEl.innerHTML = `${score}<span style="font-size:18px;">/100</span>`;
+  badgeEl.textContent = data.statusLabel || '—';
+  barEl.style.width = score + '%';
+  summaryEl.textContent = data.summary || '';
+
+  const missing = data.missingSkills || [];
+  missingEl.innerHTML = missing.length ? missing.map(m => `<li>${m}</li>`).join('') : '<li>No missing skills identified.</li>';
+
+  const recs = data.recommendations || [];
+  recEl.innerHTML = recs.length ? recs.map(r => `<li>${r}</li>`).join('') : '<li>No recommendations yet.</li>';
+
+  const roadmap = data.roadmap || [];
+  roadmapEl.innerHTML = roadmap.length
+    ? roadmap.map(r => `<div class="roadmap-item"><span class="roadmap-dot ${r.status}">${r.status === 'done' ? '✓' : r.status === 'progress' ? '!' : '✕'}</span><h4>${r.title}</h4><p>${r.detail || ''}</p></div>`).join('')
+    : '<p class="cell-sub">No roadmap milestones available yet.</p>';
+}
+
+/* ============================================================
+   9l. CAREER READINESS ROADMAP — live data
+============================================================ */
+async function loadRoadmap(){
+  const { ok, data } = await apiGet('/roadmap');
+  const checklistEl = document.getElementById('roadmapChecklist');
+  const currentBar = document.getElementById('roadmapCurrentBar');
+  const currentValue = document.getElementById('roadmapCurrentValue');
+  const requiredBar = document.getElementById('roadmapRequiredBar');
+  const requiredValue = document.getElementById('roadmapRequiredValue');
+  const nextIntervention = document.getElementById('roadmapNextIntervention');
+  const expectedTimeline = document.getElementById('roadmapExpectedTimeline');
+  const momentumNote = document.getElementById('roadmapMomentumNote');
+  if (!ok || !data){
+    checklistEl.innerHTML = '<p class="cell-sub">Could not load your roadmap right now.</p>';
+    return;
+  }
+  const checklist = data.checklist || [];
+  checklistEl.innerHTML = checklist.length
+    ? checklist.map(c => `<div class="roadmap-item"><span class="roadmap-dot ${c.status}">${c.status === 'done' ? '✓' : c.status === 'progress' ? '!' : '✕'}</span><h4>${c.title}</h4><p>${c.detail || ''}</p></div>`).join('')
+    : '<p class="cell-sub">No checklist items yet.</p>';
+
+  const current = data.currentProgress ?? 0;
+  const required = data.requiredProgress ?? 0;
+  currentBar.style.width = current + '%'; currentValue.textContent = current + '%';
+  requiredBar.style.width = required + '%'; requiredValue.textContent = required + '%';
+  nextIntervention.textContent = data.nextIntervention || 'No intervention scheduled yet.';
+  expectedTimeline.textContent = data.expectedTimeline || 'Timeline will appear once enough progress data is available.';
+  if (data.momentumNote){ momentumNote.style.display = 'block'; momentumNote.textContent = data.momentumNote; }
+  else { momentumNote.style.display = 'none'; }
+}
+
+/* ============================================================
+   9m. RANKINGS — live data
+============================================================ */
+async function loadRankings(){
+  const { ok, data } = await apiGet('/rankings');
+  const kpiGrid = document.getElementById('rankingKpiGrid');
+  const title = document.getElementById('leaderboardTitle');
+  const body = document.getElementById('leaderboardBody');
+  if (!ok || !data){
+    body.innerHTML = '<p class="cell-sub">Could not load rankings right now.</p>';
+    return;
+  }
+  kpiGrid.innerHTML = `
+    <div class="card rank-card"><div class="rank-value">${data.departmentRank != null ? '#'+data.departmentRank : '—'}</div><div class="rank-label">Department Rank</div></div>
+    <div class="card rank-card"><div class="rank-value">${data.collegeRank != null ? '#'+data.collegeRank : '—'}</div><div class="rank-label">College Rank</div></div>
+    <div class="card rank-card"><div class="rank-value">${data.batchRank != null ? '#'+data.batchRank : '—'}</div><div class="rank-label">Batch Rank</div></div>
+    <div class="card rank-card"><div class="rank-value">${data.percentile != null ? data.percentile+'th' : '—'}</div><div class="rank-label">Percentile</div></div>`;
+  title.textContent = data.leaderboardTitle || 'Department Leaderboard';
+  const rows = data.leaderboard || [];
+  body.innerHTML = rows.length
+    ? rows.map(r => `<div class="leaderboard-row ${r.isYou ? 'me' : ''}"><span class="lb-rank">${r.rank}</span><span class="lb-avatar" ${r.isYou ? 'style="background:var(--teal-dark);color:#fff;"' : ''}>${r.initials || '—'}</span><span class="lb-name">${r.name}${r.isYou ? ' (You)' : ''}</span><span class="lb-score">${r.score}</span></div>`).join('')
+    : '<p class="cell-sub">No leaderboard data available yet.</p>';
+}
+
+/* ============================================================
+   9b. MY ASSESSMENTS — unified feed of both cohort assessments
+   (/api/student/assessments) and manually-authored quizzes
+   (/api/student/quizzes, db.quizzes). Both are fetched together and
+   merged into one set of Live/Scheduled/Attempted/Completed buckets
+   so the student has a single place to see and start everything.
+============================================================ */
+let assessmentsFilter = 'all';
+let assessmentsSearchTerm = '';
+let assessmentBuckets = { live:[], scheduled:[], attempted:[], completed:[] };
+
+async function loadAssessments(){
+  const grid = document.getElementById('assessmentCards');
+  grid.innerHTML = '<p class="cell-sub">Loading your assessments…</p>';
+  const [assessRes, quizRes] = await Promise.all([apiGet('/assessments'), apiGet('/quizzes')]);
+  if (!assessRes.ok && !quizRes.ok){
+    grid.innerHTML = `<p class="cell-sub">${(assessRes.data && assessRes.data.message) || 'Could not load assessments right now.'}</p>`;
+    return;
+  }
+  const a = assessRes.ok ? assessRes.data : {};
+  const q = quizRes.ok ? quizRes.data : {};
+  assessmentBuckets = {
+    // Backend bucket names differ slightly per feature (assessments use
+    // pending/upcoming, quizzes use live/scheduled) — normalized here to
+    // the single Live/Scheduled/Attempted/Completed vocabulary the UI uses.
+    live:      [...(a.pending || []).map(x => ({ ...x, kind:'assessment' })), ...(q.live || []).map(x => ({ ...x, kind:'quiz' }))],
+    scheduled: [...(a.upcoming || []).map(x => ({ ...x, kind:'assessment' })), ...(q.scheduled || []).map(x => ({ ...x, kind:'quiz' }))],
+    attempted: [...(a.attempted || []).map(x => ({ ...x, kind:'assessment' })), ...(q.attempted || []).map(x => ({ ...x, kind:'quiz' }))],
+    completed: [...(a.completed || []).map(x => ({ ...x, kind:'assessment' })), ...(q.completed || []).map(x => ({ ...x, kind:'quiz' }))],
+  };
+  renderAssessments(assessmentsFilter);
+}
+
+function fmtDate(iso){ return iso ? new Date(iso).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}) : ''; }
+function fmtTime(iso){ return iso ? new Date(iso).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true}) : ''; }
+function fmtMinutesTaken(seconds){
+  if(seconds == null) return null;
+  const mins = Math.max(1, Math.round(seconds / 60));
+  return `${mins} Minute${mins===1?'':'s'}`;
+}
+
+function unifiedCardHTML(item, bucket){
+  if (item.kind === 'quiz') return quizCardHTML(item, bucket);
+  return assessmentCardHTML(item, bucket);
+}
+
+function assessmentCardHTML(a, bucket){
+  const badgeMap = {
+    scheduled: ['badge-amber', a.availableFrom ? `Opens ${fmtDate(a.availableFrom)}` : 'Scheduled'],
+    live:      ['badge-teal', 'Live'],
+    attempted: ['badge-amber', 'In Progress'],
+    completed: ['badge-teal', 'Result Available'],
+  };
+  const [badgeCls, badgeText] = badgeMap[bucket];
+  const meta = `${a.totalQuestions || 0} questions${a.cohortTarget === 'entry_level' ? ' · Entry Level' : ''}`;
+
+  let actions;
+  if (bucket === 'completed'){
+    actions = `<button class="btn btn-teal btn-sm" onclick="goToPage('quizhistory')">View Result</button>`;
+  } else if (bucket === 'attempted'){
+    actions = `<button class="btn btn-primary btn-sm" onclick="resumeAssessment('${a.id}')">Resume</button>`;
+  } else if (bucket === 'live'){
+    actions = `<button class="btn btn-primary btn-sm" onclick="beginAssessment('${a.id}')">Start Assessment</button>`;
+  } else {
+    actions = `<button class="btn btn-ghost btn-sm" disabled>Opens soon</button>`;
+  }
+
+  return `<div class="card">
+    <div class="card-head"><h3>${a.name}</h3><span class="badge ${badgeCls}">${badgeText}</span></div>
+    <p class="cell-sub" style="margin-bottom:14px;">${meta}</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">${actions}</div>
+  </div>`;
+}
+
+function quizCardHTML(q){
+  const badgeMap = {
+    scheduled: ['badge-amber', 'Upcoming'],
+    live: ['badge-teal', 'Live'],
+    attempted: ['badge-ink', 'Attempted'],
+    completed: ['badge-ink', 'Completed'],
+    cancelled: ['badge-ink', 'Cancelled'],
+    archived: ['badge-ink', 'Archived'],
+  };
+  const [badgeCls, badgeText] = badgeMap[q.status] || ['badge-ink', q.status || ''];
+  const cohortLabel = q.cohortTarget === 'entry_level' ? 'Entry Level' : (q.cohortTarget && q.cohortTarget !== 'all' ? `Cohort ${q.cohortTarget}` : 'All Cohorts');
+
+  // Part 3/9 — full card detail: Assessment Name, Applicable Cohort,
+  // Start Date/Time, End Date/Time, Duration, Questions, Status — each
+  // its own labeled field rather than one condensed line.
+  const metaRows = [
+    ['Cohort', cohortLabel],
+    ['Starts', q.startDateTime ? `${fmtDate(q.startDateTime)} · ${fmtTime(q.startDateTime)}` : '—'],
+    ['Ends', q.endDateTime ? `${fmtDate(q.endDateTime)} · ${fmtTime(q.endDateTime)}` : '—'],
+    ['Duration', q.durationMinutes ? `${q.durationMinutes} Minutes` : '—'],
+    ['Questions', q.questionsDisplayed ?? q.questionsAvailable ?? 0],
+  ];
+  const metaGrid = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:14px;">
+    ${metaRows.map(([label,val]) => `<div><div class="cell-sub" style="margin-bottom:2px;">${label}</div><div style="font-size:13px;font-weight:600;">${val}</div></div>`).join('')}
+  </div>`;
+
+  let actions;
+  if (q.status === 'attempted'){
+    // Part 4/9 — "Completed in XX Minutes" replaces the Start Quiz
+    // button, computed from the stored startedAt/submittedAt timestamps
+    // (timeTakenSeconds), never re-derived on the frontend.
+    const pct = q.result && q.result.percentage != null ? `${q.result.percentage}%` : '—';
+    const timeTaken = fmtMinutesTaken(q.timeTakenSeconds);
+    actions = `
+      <div><div class="cell-sub">Score</div><div style="font-weight:700;">${pct}</div></div>
+      ${timeTaken ? `<div><div class="cell-sub">Completed in</div><div style="font-weight:700;">${timeTaken}</div></div>` : ''}
+      <button class="btn btn-ghost btn-sm" disabled>✔ Completed</button>`;
+  } else if (q.status === 'live' && q.canStart){
+    actions = q.action === 'resume'
+      ? `<button class="btn btn-primary btn-sm" onclick="resumeQuiz('${q.id}')">Resume Quiz</button>`
+      : `<button class="btn btn-primary btn-sm" onclick="beginQuiz('${q.id}')">Start Quiz</button>`;
+  } else if (q.status === 'scheduled'){
+    actions = `<button class="btn btn-ghost btn-sm" disabled>Opens soon</button>`;
+  } else {
+    actions = `<button class="btn btn-ghost btn-sm" disabled>Not available</button>`;
+  }
+
+  return `<div class="card">
+    <div class="card-head"><h3>${q.title || 'Quiz'}</h3><span class="badge ${badgeCls}">${badgeText}</span></div>
+    <p class="cell-sub" style="margin-bottom:12px;">${q.description || ''}</p>
+    ${metaGrid}
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">${actions}</div>
+  </div>`;
+}
+
+function assessmentSearchableText(item){
+  // Title/quiz name + a few relevant fields, so the search box matches
+  // "assessment title, quiz name, or relevant fields" per spec.
+  return [item.name, item.title, item.description, item.section, item.category]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
+function renderAssessments(filter){
+  if (filter !== undefined) assessmentsFilter = filter;
+  const grid = document.getElementById('assessmentCards');
+  const order = assessmentsFilter === 'all' ? ['live','scheduled','attempted','completed'] : [assessmentsFilter];
+  const term = assessmentsSearchTerm.trim().toLowerCase();
+  const cards = [];
+  order.forEach(bucket => (assessmentBuckets[bucket] || []).forEach(item => {
+    if (term && !assessmentSearchableText(item).includes(term)) return;
+    cards.push(unifiedCardHTML(item, bucket));
+  }));
+  if (!cards.length){
+    grid.innerHTML = `<p class="cell-sub">${term ? 'No assessments match your search.' : 'No assessments in this view yet.'}</p>`;
+    return;
+  }
+  grid.innerHTML = cards.join('');
+}
+
+const globalSearchInput = document.getElementById('globalSearch');
+if (globalSearchInput){
+  globalSearchInput.addEventListener('input', () => {
+    assessmentsSearchTerm = globalSearchInput.value || '';
+    // Assessments are the only searchable dataset already loaded on the
+    // client; re-render live as the student types, on whichever tab is
+    // currently selected, without re-fetching from the backend.
+    if (document.getElementById('page-assessments').classList.contains('active')){
+      renderAssessments();
+    }
+  });
+}
+
+/* ============================================================
+   9d. DASHBOARD HOME — live employability snapshot
+============================================================ */
+async function loadDashboardSnapshot(){
+  const [meRes, chartsRes, cohortRes, resultsRes] = await Promise.all([
+    apiGet('/me', AUTH_API_BASE),
+    apiGet('/dashboard/charts'),
+    apiGet('/cohort-status'),
+    apiGet('/results'),
+  ]);
+
+  if (meRes.ok && meRes.data.user){
+    const u = meRes.data.user;
+    document.getElementById('dashWelcomeName').textContent = `Welcome back, ${u.fullName || 'Student'} 👋`;
+    document.getElementById('dashProfileMeta').textContent = [u.rollNumber, u.college].filter(Boolean).join(' · ') || '—';
+    document.getElementById('dashCollegeChip').textContent = `🏫 ${u.college || '—'}`;
+  }
+
+  let skillRadar = {};
+  if (chartsRes.ok){
+    // Section-wise dimension bars still come from /dashboard/charts (an
+    // existing, separate feature); the "Overall Score" figure itself is
+    // set below from /cohort-status, which is the single backend source
+    // of truth shared by Dashboard Home, My Cohort and Placement
+    // Readiness (Task 3/5/8).
+    skillRadar = chartsRes.data.skillRadar || {};
+    const entries = Object.entries(skillRadar);
+    if (entries.length){
+      document.getElementById('dimensionBars').innerHTML = entries.map(([name, score]) => `
+        <div class="dimension-row">
+          <div class="dimension-row-head"><span class="d-name">${name}</span><span class="d-score${score < 50 ? ' warn' : ''}">${score}/100</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${score}%;${score < 50 ? 'background:linear-gradient(90deg,var(--rose),var(--amber));' : ''}"></div></div>
+        </div>`).join('');
+      const weakest = entries.reduce((min, e) => e[1] < min[1] ? e : min, entries[0]);
+      document.getElementById('snapshotBody').textContent = `Focus on ${weakest[0]} (${weakest[1]}%) to raise your overall employability score.`;
+    } else {
+      document.getElementById('dimensionBars').innerHTML = '<p class="cell-sub">No assessment scores yet.</p>';
+    }
+  }
+
+  if (cohortRes.ok){
+    const c = cohortRes.data;
+    const cohortLabel = c.cohort === 'entry_level' ? 'Entry Level' : `Cohort ${c.cohort}`;
+    document.getElementById('dashCohortChip').textContent = `👥 Cohort: ${cohortLabel}`;
+    if (c.cohort === 'entry_level'){
+      const missing = [];
+      if (c.baselineAssessmentScore == null) missing.push('a baseline assessment');
+      if (c.interviewScore == null) missing.push('a manual interview');
+      document.getElementById('cohortSnapshotText').textContent = missing.length
+        ? `You're in Entry Level — complete ${missing.join(' and ')} to get your cohort assigned.`
+        : `Your cohort is being generated based on your assessment and interview scores.`;
+    } else {
+      document.getElementById('cohortSnapshotText').textContent = `You're in Cohort ${c.cohort}, based on your Final Employability Score (${c.finalEmployabilityScore ?? '—'}/100).`;
+    }
+
+    // Task 5: Dashboard Home cards — Overall Score, Interview Score,
+    // Assessments Completed, Overall Cohort — all read straight from
+    // the backend-computed values, nothing calculated here.
+    const overallScore = c.overallScore != null ? c.overallScore : 0;
+    const overallCohortLabel = c.overallCohortLabel || 'Entry Level';
+    document.getElementById('snapshotRingValue').innerHTML = `${overallScore}<span>/100</span>`;
+    const circumference = 465;
+    document.getElementById('snapshotRingFill').setAttribute('stroke-dashoffset', circumference - (circumference * overallScore / 100));
+    document.getElementById('dashReadinessValue').innerHTML = `${overallScore}<span>/100</span>`;
+    document.getElementById('dashReadinessBadge').textContent = overallCohortLabel;
+    // Placement Readiness status (Ready / Not Ready) — same value shown
+    // on the Placement Readiness page, computed server-side against the
+    // Super Admin's current cohort thresholds. Shown here too so it's
+    // visible anywhere on the Main Dashboard, not just its own page.
+    const readinessStatus = c.placementReadiness || {};
+    const statusBadgeEl = document.getElementById('dashReadinessStatusBadge');
+    statusBadgeEl.textContent = readinessStatus.statusLabel ? `Placement ${readinessStatus.statusLabel}` : '—';
+    statusBadgeEl.className = 'badge ' + (readinessStatus.ready ? 'badge-teal' : 'badge-amber');
+    document.getElementById('ribbonOverallValue').textContent = c.overallScore != null ? `${c.overallScore}%` : '—';
+    document.getElementById('ribbonInterviewValue').textContent = c.averageInterviewScore != null ? `${c.averageInterviewScore}/100` : '—';
+    document.getElementById('ribbonCohortValue').textContent = overallCohortLabel;
+    document.getElementById('ribbonQuizzesValue').textContent = String(c.assessmentsCompleted ?? 0);
+
+    const entries = Object.entries(skillRadar);
+    document.getElementById('snapshotHeadline').textContent = entries.length
+      ? `Overall score ${overallScore}/100 across ${entries.length} section(s) — you're currently in ${overallCohortLabel}.`
+      : (c.assessmentsCompleted ? `Overall score ${overallScore}/100 — you're currently in ${overallCohortLabel}.` : 'Complete an assessment to see your employability snapshot.');
+  }
+}
+
+/* ============================================================
+   10. CALENDAR (July 2026)
+============================================================ */
+let calendarViewDate = new Date();
+async function buildCalendar(){
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '<p class="cell-sub">Loading calendar…</p>';
+  const year = calendarViewDate.getFullYear();
+  const month = calendarViewDate.getMonth(); // 0-indexed
+  const { ok, data } = await apiGet(`/calendar?year=${year}&month=${month + 1}`);
+  const calEvents = {}; // day -> {label, cls}
+  if (ok && data && Array.isArray(data.events)){
+    data.events.forEach(e => {
+      const d = new Date(e.date).getDate();
+      calEvents[d] = { label: e.title, cls: e.type === 'deadline' ? 'risk' : e.type === 'assessment' ? 'warn' : '' };
+    });
+  }
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const monthLabelEl = document.querySelector('.calendar-head h3');
+  if (monthLabelEl) monthLabelEl.textContent = calendarViewDate.toLocaleDateString('en-GB', { month:'long', year:'numeric' });
+
+  const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = dows.map(d=>`<div class="calendar-dow">${d}</div>`).join('');
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let i=0;i<firstDow;i++) html += `<div class="calendar-day empty"></div>`;
+  for (let d=1; d<=daysInMonth; d++){
+    const isToday = isCurrentMonth && d === today.getDate();
+    const ev = calEvents[d];
+    html += `<div class="calendar-day ${isToday?'today':''} ${ev?'has-event':''}"><span class="daynum">${d}</span>${ev ? `<span class="cal-event ${ev.cls}">${ev.label}</span>` : ''}</div>`;
+  }
+  grid.innerHTML = html;
+  if (!ok || !data || !Array.isArray(data.events) || !data.events.length){
+    grid.insertAdjacentHTML('afterend', '<p class="cell-sub" id="calendarEmptyNote" style="margin-top:12px;">No events, workshops or assessments scheduled for this month.</p>');
+  } else {
+    const note = document.getElementById('calendarEmptyNote');
+    if (note) note.remove();
+  }
+}
+function changeCalendarMonth(delta){
+  calendarViewDate.setMonth(calendarViewDate.getMonth() + delta);
+  buildCalendar();
+}
+
+/* ============================================================
+   11. ONLINE EXAM MODULE + ANTI-CHEATING ENGINE
+   Questions/answers come entirely from /api/student — nothing here
+   is a hardcoded question bank; TOTAL_Q is derived from the real
+   random question set the backend serves for this attempt.
+============================================================ */
+let examMeta = { attemptId: null, assessment: null, questions: [], kind: 'assessment', durationSeconds: 30*60 };
+let TOTAL_Q = 0;
+let examState = { current: 0, answers: {}, marked: {}, violations: 0, timeLeft: 30*60, timerId: null, submitted:false };
+
+async function beginAssessment(assessmentId){
+  const { ok, data } = await apiPost(`/assessments/${assessmentId}/start`);
+  if (!ok){ showToast((data && data.message) || 'Could not start this assessment.', 'info'); return; }
+  openExam(data, 'assessment');
+}
+function resumeAssessment(assessmentId){ return beginAssessment(assessmentId); } // /start resumes any in-progress attempt server-side
+
+// ---- Quizzes (db.quizzes, separate feature — see student.py) ----
+async function beginQuiz(quizId){
+  const { ok, data } = await apiPost(`/quizzes/${quizId}/start`);
+  if (!ok){ showToast((data && data.message) || 'Could not start this quiz.', 'info'); return; }
+  openExam(data, 'quiz');
+}
+function resumeQuiz(quizId){ return beginQuiz(quizId); } // /start resumes any in-progress attempt server-side too
+
+function openExam(data, kind){
+  kind = kind || 'assessment';
+  const questions = (data.questions || []).map(q => kind === 'quiz' ? { ...q, questionText: q.text } : q);
+  const durationSeconds = data.remainingSeconds != null
+    ? data.remainingSeconds
+    : (kind === 'quiz' ? ((data.quiz && data.quiz.durationMinutes) || 30) * 60 : 30 * 60);
+  examMeta = { attemptId: data.attemptId, assessment: kind === 'quiz' ? data.quiz : data.assessment, questions, kind, durationSeconds };
+  TOTAL_Q = examMeta.questions.length;
+  examState = { current: 0, answers: {}, marked: {}, violations: 0, timeLeft: durationSeconds, timerId: null, submitted: false };
+  if (kind === 'quiz'){
+    // Preload any answers already saved on a previous session (resume).
+    examMeta.questions.forEach((q, idx) => { if (q.selected && q.selected.length) examState.answers[idx+1] = q.selected.slice(); });
+  }
+  const title = examMeta.assessment ? (examMeta.assessment.name || examMeta.assessment.title || (kind === 'quiz' ? 'Quiz' : 'Assessment')) : (kind === 'quiz' ? 'Quiz' : 'Assessment');
+  document.getElementById('examIntroTitle').textContent = title;
+  document.getElementById('examIntroMeta').textContent = `${TOTAL_Q} question${TOTAL_Q === 1 ? '' : 's'} · One attempt`;
+  document.getElementById('examTopTitle').textContent = title;
+  const submitLabel = kind === 'quiz' ? 'Submit Quiz' : 'Submit Assessment';
+  document.querySelectorAll('[onclick="confirmSubmitExam()"]').forEach(b => b.textContent = submitLabel);
+  const confirmTitle = document.querySelector('#modalConfirmSubmit .modal-head h3');
+  if (confirmTitle) confirmTitle.textContent = kind === 'quiz' ? 'Submit Quiz?' : 'Submit Assessment?';
+  document.getElementById('examOverlay').classList.add('active');
+  document.getElementById('examIntroState').style.display = 'block';
+  document.getElementById('examActiveState').style.display = 'none';
+  // Task 7: Dedicated Exam Mode — hide sidebar/topbar/nav the moment the
+  // exam interface is shown (intro screen included), not just once the
+  // student clicks through to the first question.
+  document.body.classList.add('exam-mode-active');
+}
+function startExam(){
+  // Legacy entry point kept for any stray callers — real flow goes through beginAssessment().
+  document.getElementById('examOverlay').classList.add('active');
+  document.getElementById('examIntroState').style.display = 'block';
+  document.getElementById('examActiveState').style.display = 'none';
+  document.body.classList.add('exam-mode-active');
+}
+function buildPalette(){
+  const grid = document.getElementById('paletteGrid');
+  let html = '';
+  for (let i=1;i<=TOTAL_Q;i++){
+    let cls = 'palette-cell';
+    if (examState.answers[i] !== undefined) cls += ' answered';
+    if (examState.marked[i]) cls += ' marked';
+    if (i === examState.current+1) cls += ' current';
+    html += `<div class="${cls}" onclick="jumpTo(${i-1})">${i}</div>`;
+  }
+  grid.innerHTML = html;
+}
+function jumpTo(i){
+  if (i < 0 || i >= TOTAL_Q) return;
+  examState.current = i;
+  renderQuestion();
+}
+function renderQuestion(){
+  const n = examState.current+1;
+  const q = examMeta.questions[examState.current];
+  if (!q) return;
+  document.getElementById('examQNum').textContent = `Question ${n} of ${TOTAL_Q}`;
+  document.getElementById('examProgressFill').style.width = ((n/TOTAL_Q)*100) + '%';
+  document.getElementById('examQSection').textContent = q.section || '';
+  document.getElementById('examQText').textContent = q.questionText || '';
+  const selected = examState.answers[n];
+  if (examMeta.kind === 'quiz'){
+    const inputType = q.type === 'multiple_choice' ? 'checkbox' : 'radio';
+    const selectedIdx = selected || [];
+    document.getElementById('examOptions').innerHTML = (q.options || []).map((opt, i) => `
+      <label class="exam-option${selectedIdx.includes(i) ? ' selected' : ''}">
+        <input type="${inputType}" name="examOpt" value="${i}" ${selectedIdx.includes(i) ? 'checked' : ''}>
+        <span>${opt}</span>
+      </label>`).join('');
+  } else {
+    document.getElementById('examOptions').innerHTML = (q.options || []).map(opt => `
+      <label class="exam-option${selected === opt ? ' selected' : ''}">
+        <input type="radio" name="examOpt" ${selected === opt ? 'checked' : ''}>
+        <span>${opt}</span>
+      </label>`).join('');
+  }
+  buildPalette();
+  updateExamNavButtons();
+}
+function updateExamNavButtons(){
+  const prevBtn = document.getElementById('examPrevBtn');
+  const nextBtn = document.getElementById('examNextBtn');
+  const isFirst = examState.current <= 0;
+  const isLast = examState.current >= TOTAL_Q - 1;
+  // Task 7: on the first question, Previous is disabled/hidden; on the
+  // last question, Next is hidden and only Finish/Submit remains.
+  if (prevBtn) prevBtn.style.display = isFirst ? 'none' : '';
+  if (nextBtn) nextBtn.style.display = isLast ? 'none' : '';
+}
+async function saveQuizAnswer(poolIndex, selected){
+  if (examMeta.kind !== 'quiz' || !examMeta.attemptId) return;
+  await apiPost(`/quiz-attempts/${examMeta.attemptId}/save`, { poolIndex, selected });
+}
+document.getElementById('examOptions').addEventListener('change', (e) => {
+  if (e.target.name !== 'examOpt') return;
+  const n = examState.current+1;
+  if (examMeta.kind === 'quiz'){
+    const q = examMeta.questions[examState.current];
+    let selectedIdx;
+    if (q.type === 'multiple_choice'){
+      selectedIdx = Array.from(document.querySelectorAll('#examOptions input[name="examOpt"]:checked')).map(el => parseInt(el.value, 10));
+    } else {
+      selectedIdx = [parseInt(e.target.value, 10)];
+    }
+    examState.answers[n] = selectedIdx;
+    if (!selectedIdx.length) delete examState.answers[n];
+    document.querySelectorAll('#examOptions .exam-option').forEach(o => o.classList.toggle('selected', selectedIdx.includes(parseInt(o.querySelector('input').value, 10))));
+    buildPalette();
+    saveQuizAnswer(q.poolIndex, selectedIdx);
+    return;
+  }
+  const label = e.target.closest('.exam-option');
+  const optText = label.querySelector('span').textContent;
+  examState.answers[n] = optText;
+  document.querySelectorAll('#examOptions .exam-option').forEach(o => o.classList.remove('selected'));
+  label.classList.add('selected');
+  buildPalette();
+});
+function examNav(dir){
+  const next = examState.current + dir;
+  if (next < 0 || next >= TOTAL_Q) return;
+  examState.current = next;
+  renderQuestion();
+}
+function markForReview(){ examState.marked[examState.current+1] = true; buildPalette(); showToast('Marked for review','info'); }
+function clearAnswer(){
+  const n = examState.current+1;
+  delete examState.answers[n];
+  if (examMeta.kind === 'quiz'){
+    const q = examMeta.questions[examState.current];
+    saveQuizAnswer(q.poolIndex, []);
+  }
+  renderQuestion();
+}
+
+function enterExam(){
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if (req) { req.call(el).catch(()=>{}); }
+  document.getElementById('examIntroState').style.display = 'none';
+  document.getElementById('examActiveState').style.display = 'flex';
+  examState.current = 0; examState.timeLeft = examMeta.durationSeconds || 30*60; examState.timerId = null; examState.submitted = false;
+  renderQuestion();
+  document.getElementById('switchesLeft').textContent = 3;
+  startExamTimer();
+}
+function startExamTimer(){
+  clearInterval(examState.timerId);
+  examState.timerId = setInterval(() => {
+    examState.timeLeft--;
+    const m = String(Math.floor(examState.timeLeft/60)).padStart(2,'0');
+    const s = String(examState.timeLeft%60).padStart(2,'0');
+    const timerEl = document.getElementById('examTimer');
+    timerEl.textContent = `${m}:${s}`;
+    timerEl.classList.toggle('low', examState.timeLeft <= 60);
+    if (examState.timeLeft <= 0){ clearInterval(examState.timerId); autoSubmitExam('Time expired.'); }
+  }, 1000);
+}
+function registerViolation(reason){
+  if (examState.submitted || !document.getElementById('examOverlay').classList.contains('active')) return;
+  if (document.getElementById('examActiveState').style.display !== 'flex') return;
+  examState.violations++;
+  const left = 3 - examState.violations;
+  document.getElementById('switchesLeft').textContent = Math.max(left,0);
+  if (examState.violations >= 3){
+    autoSubmitExam('Maximum violations (tab/window switching) reached.');
+    return;
+  }
+  document.getElementById('violationTitle').textContent = examState.violations === 2 ? 'Final Warning' : `Warning ${examState.violations}`;
+  document.getElementById('violationMessage').textContent = `${reason} ${left} switch(es) remaining before auto-submission.`;
+  openModal('modalViolation');
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) registerViolation('Tab switch / window minimize detected.'); });
+window.addEventListener('blur', () => { if (document.getElementById('examActiveState').style.display === 'flex') registerViolation('Browser focus loss detected.'); });
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && document.getElementById('examActiveState').style.display === 'flex' && !examState.submitted){
+    registerViolation('Full-screen exit detected.');
+  }
+});
+window.addEventListener('beforeunload', (e) => {
+  if (document.getElementById('examActiveState') && document.getElementById('examActiveState').style.display === 'flex' && !examState.submitted){
+    e.preventDefault(); e.returnValue = '';
+  }
+});
+function confirmSubmitExam(){
+  const answered = Object.keys(examState.answers).length;
+  document.getElementById('confirmAnsweredCount').textContent = `${answered} of ${TOTAL_Q}`;
+  openModal('modalConfirmSubmit');
+}
+async function submitCurrentAttempt(successMessage){
+  if (examMeta.kind === 'quiz'){
+    const answers = {};
+    examMeta.questions.forEach((q, idx) => { answers[q.poolIndex] = examState.answers[idx+1] || []; });
+    const { ok, data } = await apiPost(`/quiz-attempts/${examMeta.attemptId}/submit`, { answers });
+    completeExam(ok ? successMessage : ((data && data.message) || 'Submission failed — please retry from My Assessments.'));
+    window.__assessmentsLoaded = false; loadAssessments();
+    window.__quizHistoryLoaded = false;
+    return;
+  }
+  const answers = {};
+  examMeta.questions.forEach((q, idx) => {
+    const ans = examState.answers[idx+1];
+    if (ans !== undefined) answers[q.id] = ans;
+  });
+  const { ok, data } = await apiPost(`/attempts/${examMeta.attemptId}/submit`, { answers });
+  completeExam(ok ? successMessage : ((data && data.message) || 'Submission failed — please retry from My Assessments.'));
+  window.__assessmentsLoaded = false; loadAssessments();
+}
+function finalSubmitExam(){
+  closeModal('modalConfirmSubmit');
+  submitCurrentAttempt('Your responses have been recorded. Results will be published once evaluation is complete.');
+}
+function autoSubmitExam(reason){
+  closeModal('modalViolation');
+  submitCurrentAttempt(`Auto-submitted: ${reason} Your responses up to this point have been recorded.`);
+}
+function completeExam(message){
+  examState.submitted = true;
+  clearInterval(examState.timerId);
+  if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  document.getElementById('examOverlay').classList.remove('active');
+  document.body.classList.remove('exam-mode-active');
+  document.getElementById('examSubmittedReason').textContent = message;
+  openModal('modalExamSubmitted');
+}
+
+/* ============================================================
+   12. PROFILE — live data, one-time edit lock, photo upload
+============================================================ */
+document.querySelectorAll('.field input, .field textarea').forEach(inp => {
+  inp.addEventListener('input', () => { inp.closest('.field').classList.toggle('has-value', inp.value.trim().length > 0); });
+});
+
+function setAvatarEverywhere(url, initials){
+  const targets = ['profilePhotoPreview','sidebarAvatar','topbarAvatar','dashProfileAvatar'];
+  targets.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (url){ el.style.backgroundImage = `url('${url}')`; el.style.backgroundSize = 'cover'; el.style.backgroundPosition = 'center'; el.textContent = ''; }
+    else { el.style.backgroundImage = 'none'; el.textContent = initials || '—'; }
+  });
+}
+
+function renderChips(rowId, items, label){
+  const row = document.getElementById(rowId);
+  const addChip = `<span class="chip">＋ Add ${label}</span>`;
+  row.innerHTML = (items && items.length ? items.map(s => `<span class="chip">${s}</span>`).join('') : '') + addChip;
+}
+
+async function loadProfile(){
+  const { ok, data } = await apiGet('/profile');
+  const lockNote = document.getElementById('profileEditLockNote');
+  const saveBtn = document.getElementById('profileSaveBtn');
+  const changePhotoBtn = document.getElementById('changePhotoBtn');
+  if (!ok || !data){
+    showToast('Could not load profile right now.', 'info');
+    return;
+  }
+  const p = data.profile || {};
+  document.getElementById('fieldPhone').value = p.phone || '';
+  document.getElementById('fieldEmail').value = p.email || '';
+  document.getElementById('fieldAddress').value = p.address || '';
+  document.getElementById('fieldLinkedin').value = p.linkedin || '';
+  document.getElementById('fieldGithub').value = p.github || '';
+  document.getElementById('fieldPortfolio').value = p.portfolio || '';
+  document.getElementById('fieldObjective').value = p.careerObjective || '';
+  document.getElementById('fieldRollNumber').value = p.rollNumber || '—';
+  document.getElementById('fieldDepartment').value = p.department || '—';
+  document.getElementById('fieldCollege').value = p.college || '—';
+  document.getElementById('fieldYear').value = p.year || '—';
+  document.getElementById('fieldRegNumber').value = p.registrationNumber || '—';
+  document.querySelectorAll('#profileForm .field input, #profileForm .field textarea').forEach(inp => {
+    inp.closest('.field').classList.toggle('has-value', inp.value.trim().length > 0);
+  });
+  renderChips('skillChipsRow', p.skills, 'Skill');
+  renderChips('languageChipsRow', p.languages, 'Language');
+
+  const completion = p.profileCompletion ?? 0;
+  document.getElementById('profileCompletionBar').style.width = completion + '%';
+  document.getElementById('profileCompletionValue').textContent = completion + '%';
+
+  const initials = (p.fullName || '').split(' ').map(w=>w[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
+  setAvatarEverywhere(p.photoUrl, initials);
+  document.getElementById('sidebarUserName').textContent = p.fullName || '—';
+  document.getElementById('sidebarUserRole').textContent = [p.role || 'Student', p.department, p.batchYear].filter(Boolean).join(' · ');
+  document.getElementById('topbarProfileName').textContent = p.fullName || '—';
+
+  const editUsed = !!p.hasEditedOnce;
+  document.querySelectorAll('#profileForm .field input:not([disabled]), #profileForm .field textarea').forEach(el => el.disabled = editUsed);
+  if (saveBtn) saveBtn.disabled = editUsed;
+  if (lockNote) lockNote.textContent = editUsed ? 'One-time edit already used' : 'You can edit these details once';
+}
+
+const profileForm = document.getElementById('profileForm');
+if (profileForm){
+  profileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.submitter || profileForm.querySelector('button[type="submit"]');
+    btn.classList.add('is-loading');
+    const body = {
+      phone: document.getElementById('fieldPhone').value,
+      email: document.getElementById('fieldEmail').value,
+      address: document.getElementById('fieldAddress').value,
+      linkedin: document.getElementById('fieldLinkedin').value,
+      github: document.getElementById('fieldGithub').value,
+      portfolio: document.getElementById('fieldPortfolio').value,
+      careerObjective: document.getElementById('fieldObjective').value,
+    };
+    const { ok, data } = await apiPost('/profile', body);
+    btn.classList.remove('is-loading');
+    if (!ok){ showToast((data && data.message) || 'Could not update profile.', 'info'); return; }
+    showToast('Profile updated successfully', 'success');
+    loadProfile();
+  });
+}
+
+const profilePhotoInput = document.getElementById('profilePhotoInput');
+if (profilePhotoInput){
+  profilePhotoInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAvatarEverywhere(reader.result, null);
+    reader.readAsDataURL(file);
+    const formData = new FormData();
+    formData.append('photo', file);
+    try {
+      const res = await fetch(API_BASE + '/profile/photo', { method: 'POST', credentials: 'include', body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok){ showToast((data && data.message) || 'Could not upload photo.', 'info'); return; }
+      showToast('Profile photo updated', 'success');
+      if (data.photoUrl) setAvatarEverywhere(data.photoUrl, null);
+    } catch (err) {
+      showToast('Could not reach the server.', 'info');
+    }
+  });
+}
+
+/* ============================================================
+   12b. PASSWORD UPDATE — OTP verification flow
+============================================================ */
+async function requestPasswordOtp(){
+  const currentPassword = document.getElementById('currentPasswordField').value;
+  const newPassword = document.getElementById('newPasswordField').value;
+  const confirmPassword = document.getElementById('confirmPasswordField').value;
+  if (!currentPassword || !newPassword || !confirmPassword){ showToast('Please fill in all password fields.', 'info'); return; }
+  if (newPassword !== confirmPassword){ showToast('New password and confirmation do not match.', 'info'); return; }
+  const btn = document.getElementById('updatePasswordBtn');
+  btn.classList.add('is-loading');
+  const { ok, data } = await apiPost('/password/otp/request', { currentPassword });
+  btn.classList.remove('is-loading');
+  if (!ok){ showToast((data && data.message) || 'Could not send OTP.', 'info'); return; }
+  document.getElementById('passwordOtpMessage').textContent = data.message || 'Enter the OTP sent to your registered contact to confirm this password change.';
+  document.getElementById('passwordOtpInput').value = '';
+  openModal('modalPasswordOtp');
+}
+async function verifyPasswordOtp(){
+  const otp = document.getElementById('passwordOtpInput').value.trim();
+  if (!otp){ showToast('Please enter the OTP.', 'info'); return; }
+  const newPassword = document.getElementById('newPasswordField').value;
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.classList.add('is-loading');
+  const { ok, data } = await apiPost('/password/otp/verify', { otp, newPassword });
+  btn.classList.remove('is-loading');
+  if (!ok){ showToast((data && data.message) || 'OTP verification failed.', 'info'); return; }
+  closeModal('modalPasswordOtp');
+  document.getElementById('currentPasswordField').value = '';
+  document.getElementById('newPasswordField').value = '';
+  document.getElementById('confirmPasswordField').value = '';
+  showToast('Password updated successfully', 'success');
+}
+
+/* ============================================================
+   12c. LOGOUT
+============================================================ */
+function logout(){
+  return window.EIP.logout({ button: logoutNavItem });
+}
+const logoutNavItem = document.getElementById('logoutNavItem');
+if (logoutNavItem) logoutNavItem.addEventListener('click', logout);
+
+/* ============================================================
+   13. BUTTON RIPPLE
+============================================================ */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  const size = Math.max(rect.width, rect.height);
+  ripple.className = 'ripple';
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = (e.clientX - rect.left - size/2) + 'px';
+  ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+});
+
+/* ============================================================
+   14. SCROLL-REVEAL — fade/slide-up for cards & panels as they
+   enter view. Progressive enhancement: elements are fully visible
+   by default (see .reveal-init CSS fallback), this just adds motion.
+============================================================ */
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let revealObserver = null;
+if (!prefersReducedMotion && 'IntersectionObserver' in window){
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        entry.target.classList.add('reveal-in');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+}
+function initScrollReveal(pageEl){
+  if (!pageEl) return;
+  const items = pageEl.querySelectorAll('.card:not(.reveal-seen), .kpi-card:not(.reveal-seen), .snapshot-panel:not(.reveal-seen), .profile-strip:not(.reveal-seen)');
+  items.forEach((el, i) => {
+    el.classList.add('reveal-seen');
+    if (prefersReducedMotion || !revealObserver){ return; }
+    el.classList.add('reveal-init');
+    el.style.transitionDelay = Math.min(i * 45, 270) + 'ms';
+    revealObserver.observe(el);
+  });
+}
+
+/* ============================================================
+   15. INIT
+============================================================ */
+goToPage('dashboard');
+loadDashboardSnapshot();
+loadProfile();
+window.__profileLoaded = true;
+
+// Quiz/assessment status is computed fresh from server time on every
+// fetch (see quiz_module.compute_status / student.py) — never cached —
+// but this page only re-fetches on navigation, so a quiz crossing
+// Scheduled -> Live, or a brand-new quiz a trainer just published,
+// wouldn't appear here until the student navigated away and back. Poll
+// while My Assessments is actually the page on screen.
+setInterval(() => {
+  if (document.getElementById('page-assessments')?.classList.contains('active')) loadAssessments();
+}, 30000);
+</script>
+</body>
+</html>

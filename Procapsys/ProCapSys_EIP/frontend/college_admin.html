@@ -1,0 +1,2688 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>College Admin — ProCapSys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Export engines: real PDF (jsPDF + autotable) and real Excel (SheetJS) generation for Export/Reports modules -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ============================================================
+   0. DESIGN TOKENS — carried over verbatim from home.html so the
+   College Admin experience reads as the same product: Ink/Paper/
+   Orange(Blue)/Amber(Violet)/Teal(Cyan) palette, Space Grotesk
+   display + Inter body + JetBrains Mono utility.
+============================================================ */
+:root{
+  --ink:            #1B140C;
+  --ink-soft:       #241B10;
+  --ink-line:       rgba(255,255,255,0.10);
+  --blue:           #E8720C;
+  --blue-deep:      #B95700;
+  --violet:         #F2A93B;
+  --cyan:           #1F9E93;
+  --paper:          #FBF8F3;
+  --paper-alt:      #F5EEE2;
+  --paper-raised:   #FFFFFF;
+  --white:          #FFFFFF;
+  --slate-900:      #1E1A14;
+  --slate-700:      #564B3D;
+  --slate-500:      #857A69;
+  --slate-300:      #DCD2C0;
+  --line:           #EAE1D0;
+  --ready:          #1F9E73;
+  --warn:           #F0B429;
+  --risk:           #E8563F;
+
+  --text:var(--slate-900); --text-soft:var(--slate-700); --text-faint:var(--slate-500);
+
+  /* Fixed dark chrome surface (sidebar, toast, active pills, dashboard
+     hero) — intentionally stays dark in BOTH themes, unlike --ink below
+     which is redefined per-theme for foreground/icon contrast use. */
+  --ink-fixed:      #1B140C;
+  /* Warning chip/icon text needs a different shade per theme to stay
+     readable against its translucent amber tint background. */
+  --warn-text:      #96700E;
+
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  --s-1: 8px;  --s-2: 16px; --s-3: 24px; --s-4: 32px;
+  --s-5: 40px; --s-6: 48px; --s-7: 64px;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 100px;
+  --ease: cubic-bezier(.16,.84,.44,1);
+  --ease-soft: cubic-bezier(.22,.68,.32,1.05);
+  --transition: .3s var(--ease-soft);
+
+  --shadow-sm: 0 4px 14px -8px rgba(30,26,20,0.18);
+  --shadow-md: 0 24px 44px -22px rgba(30,26,20,0.25);
+  --shadow-lg: 0 40px 80px -32px rgba(27,20,12,0.35);
+
+  --sidebar-w: 272px; --sidebar-w-c: 84px; --topbar-h: 74px;
+}
+[data-theme="dark"]{
+  --ink:#F5EEE2; --ink-soft:#DCD2C0;
+  --paper:#17120C; --paper-raised:#221B12; --paper-alt:#1E1810;
+  --line:#3A2F20;
+  --text:#F5EEE2; --text-soft:#C9BCA6; --text-faint:#8C8070;
+  --warn-text: var(--warn);
+  --shadow-sm: 0 4px 14px -8px rgba(0,0,0,0.5);
+  --shadow-md: 0 24px 44px -22px rgba(0,0,0,0.55);
+  --shadow-lg: 0 40px 80px -32px rgba(0,0,0,0.65);
+}
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+}
+body{
+  font-family:var(--font-body); background:var(--paper); color:var(--text);
+  line-height:1.5; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  transition:background var(--transition), color var(--transition);
+}
+img,svg{ max-width:100%; display:block; }
+a{ color:inherit; text-decoration:none; }
+ul{ list-style:none; }
+button,input,select,textarea{ font-family:inherit; color:inherit; }
+button{ cursor:pointer; border:none; background:none; }
+h1,h2,h3,h4{ font-family:var(--font-display); font-weight:600; line-height:1.18; letter-spacing:-0.01em; }
+::selection{ background:var(--violet); color:var(--ink); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible{
+  outline:2px solid var(--cyan); outline-offset:2px; border-radius:4px;
+}
+::-webkit-scrollbar{ width:9px; height:9px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:var(--line); border-radius:10px; }
+
+.eyebrow{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--blue); display:inline-flex; align-items:center; gap:8px; font-weight:600; }
+.eyebrow .ring-dot{ width:6px; height:6px; border-radius:50%; background:var(--cyan); box-shadow:0 0 0 3px rgba(31,158,147,0.18); animation:pulseDot 2.4s ease-in-out infinite; flex:none; }
+@keyframes pulseDot{ 0%,100%{ box-shadow:0 0 0 3px rgba(31,158,147,0.18);} 50%{ box-shadow:0 0 0 6px rgba(31,158,147,0.08);} }
+
+/* buttons -------------------------------------------------- */
+.btn{ font-weight:600; font-size:14px; padding:11px 20px; border-radius:var(--radius-pill); display:inline-flex; align-items:center; gap:7px; transition:transform var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition), border-color var(--transition); white-space:nowrap; }
+.btn-primary{ background:linear-gradient(115deg, var(--blue) 0%, var(--violet) 50%, var(--blue) 100%); background-size:220% 100%; color:#fff; box-shadow:0 8px 24px -8px rgba(232,114,12,0.5); }
+.btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 30px -8px rgba(232,114,12,0.6); background-position:100% 0%; }
+.btn-ghost{ color:var(--text); border:1px solid var(--line); background:var(--paper-raised); }
+.btn-ghost:hover{ border-color:var(--slate-500); transform:translateY(-1px); }
+.btn-accent{ background:var(--violet); color:#3A2500; box-shadow:var(--shadow-sm); }
+.btn-accent:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.btn-danger{ background:var(--risk); color:#fff; }
+.btn-danger:hover{ background:#C7452F; transform:translateY(-2px); }
+.btn-teal{ background:var(--cyan); color:#fff; }
+.btn-teal:hover{ background:#186F66; transform:translateY(-2px); }
+.btn-sm{ padding:8px 15px; font-size:12.5px; }
+.btn-xs{ padding:5px 10px; font-size:11.5px; border-radius:8px; }
+.btn-icon{ width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; padding:0; border:1px solid var(--line); background:var(--paper-raised); transition:all var(--transition); }
+.btn-icon:hover{ border-color:var(--slate-500); transform:translateY(-1px); }
+.btn-icon.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
+.btn[disabled]{ opacity:.45; pointer-events:none; }
+.btn-block{ width:100%; justify-content:center; }
+.icon{ width:17px; height:17px; flex:none; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.icon-sm{ width:14px; height:14px; }
+.icon-lg{ width:22px; height:22px; }
+
+/* ============================================================
+   1. APP SHELL
+============================================================ */
+.admin-shell{ display:flex; min-height:100vh; }
+
+.sidebar{
+  width:var(--sidebar-w); flex:none; background:var(--ink-fixed); color:#FBF3E7;
+  display:flex; flex-direction:column; position:sticky; top:0; height:100vh; z-index:200;
+  transition:width var(--transition), transform var(--transition); overflow:hidden;
+}
+.sidebar.collapsed{ width:var(--sidebar-w-c); }
+.sidebar-brand{ display:flex; align-items:flex-start; gap:12px; padding:20px; border-bottom:1px solid var(--ink-line); }
+.sidebar-brand-main{ display:flex; flex-direction:column; align-items:flex-start; gap:12px; min-width:0; flex:1; }
+.sidebar-brand .brand-logo{ height:110px; width:auto; flex:none; object-fit:contain; display:block; background:#fff; border-radius:14px; padding:14px 18px; border:1px solid rgba(255,255,255,0.2); box-shadow:0 10px 26px -14px rgba(0,0,0,0.55); }
+.sidebar.collapsed .sidebar-brand{ padding:16px 0; justify-content:center; }
+.sidebar.collapsed .sidebar-brand-main{ align-items:center; gap:0; }
+.sidebar.collapsed .sidebar-brand .brand-logo{ height:30px; padding:5px 7px; border-radius:8px; }
+.sidebar.collapsed .brand-text{ display:none; }
+.sidebar-close-btn{ display:none; margin-left:auto; flex:none; color:rgba(251,243,231,0.7); border-color:transparent; background:transparent; }
+.sidebar-close-btn:hover{ color:#fff; background:rgba(255,255,255,0.08); }
+.brand-mark{ width:38px; height:38px; border-radius:12px; flex:none; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:14px; color:#fff; }
+.brand-text{ font-family:var(--font-display); font-weight:600; font-size:14.5px; line-height:1.25; white-space:nowrap; transition:opacity var(--transition), width var(--transition); }
+.brand-text small{ display:block; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--violet); font-weight:600; margin-top:2px; }
+.sidebar.collapsed .brand-text{ opacity:0; width:0; }
+.sidebar-scroll{ flex:1; overflow-y:auto; overflow-x:hidden; padding:14px 12px 20px; }
+.side-section-label{ font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:rgba(251,243,231,0.38); padding:16px 12px 8px; white-space:nowrap; transition:all var(--transition); }
+.side-section-label:first-child{ padding-top:6px; }
+.sidebar.collapsed .side-section-label{ opacity:0; height:0; padding:8px 0 0; overflow:hidden; }
+.side-nav{ display:flex; flex-direction:column; gap:2px; }
+.side-link{ display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; color:rgba(251,243,231,0.68); font-size:13.5px; font-weight:600; white-space:nowrap; transition:all var(--transition); position:relative; }
+.side-link .icon{ flex:none; }
+.side-link:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+.side-link.active{ background:linear-gradient(115deg, rgba(232,114,12,0.9), rgba(242,169,59,0.85)); color:#fff; box-shadow:0 8px 20px -8px rgba(232,114,12,0.6); }
+.side-link .label{ flex:1; overflow:hidden; text-overflow:ellipsis; }
+.side-link .count{ background:rgba(255,255,255,0.16); font-family:var(--font-mono); font-size:10.5px; padding:2px 7px; border-radius:100px; }
+.side-link.active .count{ background:rgba(255,255,255,0.28); }
+.sidebar.collapsed .side-link .label, .sidebar.collapsed .side-link .count{ display:none; }
+.sidebar.collapsed .side-link{ justify-content:center; }
+.sidebar-foot{ padding:14px; border-top:1px solid var(--ink-line); }
+.sidebar-collapse-btn{ width:100%; display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:12px; color:rgba(251,243,231,0.55); font-size:12.5px; font-weight:600; }
+.sidebar-collapse-btn:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+.sidebar.collapsed .sidebar-collapse-btn .label{ display:none; }
+.sidebar.collapsed .sidebar-collapse-btn{ justify-content:center; }
+.sidebar.collapsed .sidebar-collapse-btn .icon{ transform:rotate(180deg); }
+
+.main-col{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(18,14,9,0.5); z-index:190; opacity:0; transition:opacity var(--transition); }
+.sidebar-backdrop.show{ display:block; opacity:1; }
+html.no-scroll, html.no-scroll body{ overflow:hidden; height:100%; }
+
+.topbar{ position:sticky; top:0; z-index:150; height:var(--topbar-h); display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 28px; background:rgba(251,248,243,0.82); backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%); border-bottom:1px solid var(--line); }
+[data-theme="dark"] .topbar{ background:rgba(23,18,12,0.82); }
+.topbar-left{ display:flex; align-items:center; gap:16px; min-width:0; }
+.mobile-menu-btn{ display:none; }
+.page-title-wrap{ min-width:0; }
+.breadcrumb{ font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-faint); margin-bottom:2px; }
+.page-title-wrap h1{ font-size:19px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.topbar-right{ display:flex; align-items:center; gap:10px; flex:none; }
+.search-box{ display:flex; align-items:center; gap:8px; background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-pill); padding:9px 16px; width:280px; transition:border-color var(--transition); }
+.search-box:focus-within{ border-color:var(--blue); }
+.search-box input{ border:none; outline:none; background:none; font-size:13.5px; width:100%; }
+.search-box .icon{ color:var(--text-faint); }
+.bell-wrap{ position:relative; }
+.bell-dot{ position:absolute; top:8px; right:9px; width:8px; height:8px; border-radius:50%; background:var(--risk); border:2px solid var(--paper-raised); }
+.profile-chip{ display:flex; align-items:center; gap:10px; padding:6px 12px 6px 6px; border-radius:var(--radius-pill); border:1px solid var(--line); background:var(--paper-raised); cursor:pointer; }
+.profile-chip .who{ line-height:1.2; }
+.profile-chip .who b{ display:block; font-size:12.5px; }
+.profile-chip .who span{ font-size:11px; color:var(--text-faint); }
+.avatar{ border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-family:var(--font-display); flex:none; }
+
+.main-content{ padding:28px; max-width:1520px; }
+.page{ display:flex; flex-direction:column; gap:22px; animation:pageIn .4s var(--ease-soft); }
+@keyframes pageIn{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:none;} }
+
+/* section headers ------------------------------------------ */
+.section-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.section-head h2{ font-size:21px; }
+.section-head p{ color:var(--text-soft); font-size:13.5px; margin-top:4px; }
+.head-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+/* back link -------------------------------------------------*/
+.back-link{ display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--text-soft); }
+.back-link:hover{ color:var(--blue); }
+
+/* cards ------------------------------------------------------*/
+.card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); padding:22px; }
+.grid{ display:grid; gap:18px; }
+.grid-4{ grid-template-columns:repeat(4,1fr); }
+.grid-3{ grid-template-columns:repeat(3,1fr); }
+.grid-2{ grid-template-columns:repeat(2,1fr); }
+.grid-12{ grid-template-columns:repeat(12,1fr); }
+.span-4{ grid-column:span 4; } .span-6{ grid-column:span 6; } .span-8{ grid-column:span 8; } .span-12{ grid-column:span 12; } .span-3{grid-column:span 3;} .span-5{grid-column:span 5;} .span-7{grid-column:span 7;} .span-9{grid-column:span 9;}
+
+/* kpi cards ---------------------------------------------------*/
+.kpi-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); padding:20px; transition:transform var(--transition), box-shadow var(--transition); position:relative; overflow:hidden; }
+.kpi-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-md); }
+.kpi-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.kpi-ic{ width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; }
+.kpi-trend{ font-family:var(--font-mono); font-size:11.5px; font-weight:600; display:flex; align-items:center; gap:3px; padding:3px 8px; border-radius:100px; }
+.kpi-trend.up{ color:var(--ready); background:rgba(31,158,115,0.12); }
+.kpi-trend.down{ color:var(--risk); background:rgba(232,86,63,0.12); }
+.kpi-value{ font-family:var(--font-display); font-size:26px; font-weight:700; margin-bottom:2px; }
+.kpi-label{ font-size:12.5px; color:var(--text-soft); margin-bottom:12px; }
+.kpi-spark{ width:100%; height:34px; }
+
+/* chips / badges ---------------------------------------------*/
+.chip{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:4px 11px; border-radius:100px; font-family:var(--font-mono); letter-spacing:.02em; white-space:nowrap; }
+.chip-ready{ background:rgba(31,158,115,0.13); color:var(--ready); }
+.chip-warn{ background:rgba(240,180,41,0.16); color:var(--warn-text); }
+.chip-risk{ background:rgba(232,86,63,0.13); color:var(--risk); }
+.chip-neutral{ background:var(--paper-alt); color:var(--text-soft); }
+.chip-info{ background:rgba(31,158,147,0.13); color:var(--cyan); }
+
+/* tables -------------------------------------------------------*/
+.table-wrap{ overflow-x:auto; border-radius:var(--radius-md); border:1px solid var(--line); background:var(--paper-raised); }
+table.dt{ width:100%; border-collapse:collapse; min-width:760px; }
+table.dt thead th{ text-align:left; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--text-faint); padding:13px 16px; border-bottom:1px solid var(--line); background:var(--paper-alt); white-space:nowrap; }
+table.dt tbody td{ padding:13px 16px; border-bottom:1px solid var(--line); font-size:13.5px; vertical-align:middle; }
+table.dt tbody tr:last-child td{ border-bottom:none; }
+table.dt tbody tr{ transition:background var(--transition); }
+table.dt tbody tr:hover{ background:var(--paper-alt); }
+.row-clickable{ cursor:pointer; }
+.cell-name{ font-weight:600; }
+.cell-sub{ font-size:11.5px; color:var(--text-faint); }
+.row-actions{ display:flex; gap:6px; }
+
+/* toolbar / filters ----------------------------------------------*/
+.toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+.toolbar-left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1; }
+.filter-select, .filter-input{ border:1px solid var(--line); background:var(--paper-raised); border-radius:10px; padding:9px 12px; font-size:12.5px; font-weight:600; color:var(--text); }
+.filter-input{ min-width:220px; }
+.tag-filter{ display:flex; gap:8px; flex-wrap:wrap; }
+.pagination{ display:flex; align-items:center; gap:6px; justify-content:flex-end; padding:14px 16px; font-size:12.5px; color:var(--text-soft); }
+.page-btn{ width:30px; height:30px; border-radius:8px; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; }
+.page-btn.active{ background:var(--ink-fixed); color:#fff; border-color:var(--ink-fixed); }
+
+/* tabs --------------------------------------------------------*/
+.tabbar{ display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:0; }
+.tab-btn{ padding:11px 16px; font-size:13px; font-weight:600; color:var(--text-soft); border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+.tab-btn:hover{ color:var(--text); }
+.tab-btn.active{ color:var(--blue); border-color:var(--blue); }
+.tab-btn .count{ background:var(--paper-alt); font-family:var(--font-mono); font-size:10px; padding:1px 6px; border-radius:100px; }
+.tab-btn.active .count{ background:rgba(232,114,12,0.14); color:var(--blue); }
+
+/* pills subnav (module sub-sections) */
+.subnav{ display:flex; gap:8px; flex-wrap:wrap; }
+.subnav a, .subnav button{ padding:8px 15px; border-radius:100px; font-size:12.5px; font-weight:600; border:1px solid var(--line); background:var(--paper-raised); color:var(--text-soft); }
+.subnav a.active, .subnav button.active{ background:var(--ink-fixed); color:#fff; border-color:var(--ink-fixed); }
+
+/* progress bars -------------------------------------------------*/
+.pbar{ height:8px; border-radius:100px; background:var(--paper-alt); overflow:hidden; }
+.pbar > i{ display:block; height:100%; border-radius:100px; background:linear-gradient(90deg,var(--blue),var(--violet)); }
+.pbar.teal > i{ background:var(--cyan); }
+.pbar.risk > i{ background:var(--risk); }
+.pbar.ready > i{ background:var(--ready); }
+
+/* empty state -----------------------------------------------------*/
+.empty-state{ text-align:center; padding:54px 20px; color:var(--text-soft); }
+.empty-state .icon-lg{ margin:0 auto 14px; width:40px; height:40px; color:var(--text-faint); }
+.empty-state h3{ font-size:16px; margin-bottom:6px; color:var(--text); }
+.empty-state p{ font-size:13px; max-width:360px; margin:0 auto; }
+
+/* skeleton --------------------------------------------------------*/
+.skel{ background:linear-gradient(90deg, var(--paper-alt) 25%, var(--line) 37%, var(--paper-alt) 63%); background-size:400% 100%; animation:skelShine 1.4s ease infinite; border-radius:8px; }
+@keyframes skelShine{ 0%{ background-position:100% 0;} 100%{ background-position:0 0;} }
+
+/* form elements -----------------------------------------------------*/
+.form-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field.full{ grid-column:1/-1; }
+.field label{ font-size:12.5px; font-weight:600; color:var(--text-soft); }
+.field label .req{ color:var(--risk); }
+.field input, .field select, .field textarea{ border:1px solid var(--line); background:var(--paper-raised); border-radius:10px; padding:11px 13px; font-size:13.5px; }
+.field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--blue); }
+.field .hint{ font-size:11.5px; color:var(--text-faint); }
+.field-error input{ border-color:var(--risk); }
+.field-error .err-msg{ color:var(--risk); font-size:11.5px; }
+.checkline{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+.upload-zone{ border:2px dashed var(--line); border-radius:var(--radius-md); padding:36px 20px; text-align:center; color:var(--text-soft); background:var(--paper-alt); }
+.upload-zone .icon-lg{ margin:0 auto 10px; color:var(--blue); }
+.stepper{ display:flex; align-items:center; gap:8px; }
+.step{ display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:var(--text-faint); }
+.step .num{ width:26px; height:26px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11.5px; }
+.step.active{ color:var(--blue); }
+.step.active .num{ border-color:var(--blue); background:var(--blue); color:#fff; }
+.step.done .num{ border-color:var(--ready); background:var(--ready); color:#fff; }
+.step-line{ width:28px; height:2px; background:var(--line); }
+
+/* modal -------------------------------------------------------------*/
+.modal-overlay{ position:fixed; inset:0; background:rgba(27,20,12,0.55); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; z-index:900; padding:20px; animation:fadeIn .25s var(--ease); }
+@keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+.modal{ background:var(--paper-raised); border-radius:var(--radius-lg); max-width:640px; width:100%; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow-lg); animation:modalIn .35s var(--ease-soft); }
+.modal.modal-lg{ max-width:920px; }
+@keyframes modalIn{ from{ opacity:0; transform:translateY(18px) scale(.97);} to{ opacity:1; transform:none;} }
+.modal-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 24px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--paper-raised); z-index:2; }
+.modal-head h3{ font-size:17.5px; }
+.modal-head p{ font-size:12.5px; color:var(--text-soft); margin-top:3px; }
+.modal-body{ padding:24px; display:flex; flex-direction:column; gap:18px; }
+.modal-foot{ padding:18px 24px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; position:sticky; bottom:0; background:var(--paper-raised); }
+
+/* toast ---------------------------------------------------------------*/
+.toast-container{ position:fixed; top:20px; right:20px; z-index:999; display:flex; flex-direction:column; gap:10px; }
+.toast{ background:var(--ink-fixed); color:#fff; padding:13px 18px; border-radius:12px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:10px; box-shadow:var(--shadow-lg); animation:toastIn .35s var(--ease-soft); max-width:340px; }
+.toast.success .icon{ color:var(--ready); } .toast.error .icon{ color:var(--risk); } .toast.info .icon{ color:var(--violet); }
+@keyframes toastIn{ from{ opacity:0; transform:translateX(30px);} to{ opacity:1; transform:none;} }
+
+/* misc entity cards ------------------------------------------------------*/
+.entity-card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); padding:20px; transition:transform var(--transition), box-shadow var(--transition); cursor:pointer; display:flex; flex-direction:column; gap:12px; }
+.entity-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow-md); }
+.rank-badge{ width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; font-weight:700; background:var(--paper-alt); color:var(--text-soft); }
+
+/* notif list -----------------------------------------------------------*/
+.notif-item{ display:flex; gap:12px; padding:14px 16px; border-radius:12px; transition:background var(--transition); align-items:flex-start; }
+.notif-item:hover{ background:var(--paper-alt); }
+.notif-item.unread{ background:rgba(232,114,12,0.05); }
+.notif-ic{ width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:none; }
+.notif-item.unread .notif-ic{ background:rgba(232,114,12,0.12); color:var(--blue); }
+.notif-item:not(.unread) .notif-ic{ background:var(--paper-alt); color:var(--text-faint); }
+
+/* audit timeline ----------------------------------------------------------*/
+.timeline{ position:relative; padding-left:26px; }
+.timeline::before{ content:''; position:absolute; left:7px; top:6px; bottom:6px; width:2px; background:var(--line); }
+.tl-item{ position:relative; padding-bottom:22px; }
+.tl-item:last-child{ padding-bottom:0; }
+.tl-dot{ position:absolute; left:-26px; top:3px; width:16px; height:16px; border-radius:50%; background:var(--paper-raised); border:2px solid var(--blue); }
+.tl-time{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); }
+
+/* rule card ----------------------------------------------------------------*/
+.rule-card{ display:flex; align-items:center; gap:14px; padding:16px; border:1px solid var(--line); border-radius:var(--radius-md); background:var(--paper-alt); }
+.rule-ic{ width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:none; }
+
+/* dashboard hero + kpi strip -------------------------------------------*/
+.dash-hero{ position:relative; overflow:hidden; border-radius:var(--radius-lg); background:linear-gradient(120deg, var(--ink-fixed) 0%, #3A2410 55%, var(--blue-deep) 130%); color:#FBF3E7; padding:34px 38px; display:flex; align-items:center; gap:28px; justify-content:space-between; }
+.dash-hero-left{ position:relative; z-index:2; max-width:520px; }
+.dash-hero-left .eyebrow{ color:var(--violet); }
+.dash-hero-left h1{ font-size:28px; color:#fff; margin:10px 0 8px; }
+.dash-hero-left p{ font-size:14px; color:rgba(251,243,231,0.78); line-height:1.6; margin-bottom:20px; }
+.dash-hero-cta{ display:flex; gap:10px; flex-wrap:wrap; }
+.dash-hero-cta .btn-ghost{ background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.25); color:#fff; }
+.dash-hero-illustration{ position:relative; z-index:2; flex:none; width:230px; height:150px; }
+.dash-hero::before{ content:''; position:absolute; right:-60px; top:-60px; width:280px; height:280px; border-radius:50%; background:radial-gradient(circle, rgba(242,169,59,0.35), transparent 70%); z-index:1; }
+.dash-hero::after{ content:''; position:absolute; left:30%; bottom:-100px; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, rgba(31,158,147,0.25), transparent 70%); z-index:1; }
+
+.kpi-strip{ display:grid; grid-template-columns:repeat(8,1fr); background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius-md); overflow:hidden; }
+.kpi-strip-item{ padding:18px 16px; border-right:1px solid var(--line); transition:background var(--transition); }
+.kpi-strip-item:last-child{ border-right:none; }
+.kpi-strip-item:hover{ background:var(--paper-alt); }
+.kpi-strip-ic{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.kpi-strip-value{ font-family:var(--font-display); font-size:19px; font-weight:700; }
+.kpi-strip-label{ font-size:11px; color:var(--text-soft); margin-top:2px; }
+.kpi-strip-trend{ font-family:var(--font-mono); font-size:10.5px; font-weight:700; margin-top:6px; display:inline-flex; align-items:center; gap:2px; }
+.kpi-strip-trend.up{ color:var(--ready);} .kpi-strip-trend.down{ color:var(--risk); }
+
+.action-item{ display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:12px; border:1px solid var(--line); margin-bottom:8px; }
+.action-item.urgent{ border-color:rgba(232,86,63,0.35); background:rgba(232,86,63,0.05); }
+.action-item .a-ic{ width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; background:rgba(240,180,41,0.18); color:var(--warn-text); }
+.action-item.urgent .a-ic{ background:rgba(232,86,63,0.16); color:var(--risk); }
+
+th.sortable{ cursor:pointer; user-select:none; }
+th.sortable:hover{ color:var(--text); }
+th.sortable .sort-arrow{ display:inline-block; margin-left:3px; opacity:0.5; }
+.qa-strip{ display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; }
+.qa-item{ flex:1; min-width:120px; display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 10px; border-radius:var(--radius-md); border:1px solid var(--line); background:var(--paper-raised); text-align:center; transition:all var(--transition); }
+.qa-item:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); border-color:var(--blue); }
+.qa-item .qa-ic{ width:40px; height:40px; border-radius:12px; background:rgba(232,114,12,0.12); color:var(--blue); display:flex; align-items:center; justify-content:center; }
+.qa-item span{ font-size:12px; font-weight:600; }
+@media (max-width:1180px){ .kpi-strip{ grid-template-columns:repeat(4,1fr); } .dash-hero{ flex-direction:column; text-align:left; } .dash-hero-illustration{ width:100%; height:120px; } }
+@media (max-width:640px){ .kpi-strip{ grid-template-columns:repeat(2,1fr); } .kpi-strip-item{ border-bottom:1px solid var(--line); } }
+
+/* responsive ---------------------------------------------------------------*/
+@media (max-width: 1180px){
+  .grid-4{ grid-template-columns:repeat(2,1fr); }
+  .grid-3{ grid-template-columns:repeat(2,1fr); }
+  .grid-12 .span-4, .grid-12 .span-3{ grid-column:span 6; }
+  .grid-12 .span-8, .grid-12 .span-9{ grid-column:span 12; }
+  .form-grid{ grid-template-columns:1fr; }
+}
+@media (max-width: 1024px){
+  .sidebar{ position:fixed; left:0; top:0; transform:translateX(-100%); box-shadow:var(--shadow-lg); transition:transform .32s var(--ease-soft); }
+  .sidebar.mobile-open{ transform:translateX(0); }
+  .sidebar.collapsed{ width:var(--sidebar-w); }
+  .sidebar.collapsed .brand-text, .sidebar.collapsed .side-link .label, .sidebar.collapsed .side-link .count, .sidebar.collapsed .side-section-label, .sidebar.collapsed .sidebar-collapse-btn .label{ display:block; opacity:1; height:auto; }
+  .sidebar-collapse-btn{ display:none; }
+  .sidebar-close-btn{ display:inline-flex; }
+  .mobile-menu-btn{ display:flex; }
+  .topbar{ padding:0 16px; }
+}
+@media (max-width: 767px){
+  .search-box{ display:none; }
+  .main-content{ padding:18px; }
+  .grid-4, .grid-3, .grid-2{ grid-template-columns:1fr; }
+  .grid-12 .span-4, .grid-12 .span-6, .grid-12 .span-8, .grid-12 .span-3, .grid-12 .span-5, .grid-12 .span-7, .grid-12 .span-9{ grid-column:span 12; }
+  .profile-chip .who{ display:none; }
+}
+@media (min-width: 768px) and (max-width: 900px){
+  .search-box{ width:180px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-container"></div>
+<script src="auth-common.js"></script>
+<script>
+/* ============================================================
+   SESSION GUARD — now provided by auth-common.js (see <script
+   src="auth-common.js"> above), which also supplies the shared
+   EIP.logout() implementation and the bfcache Back-button guard.
+============================================================ */
+
+/* ============================================================
+   ICONS
+============================================================ */
+const ICONS = {
+  grid:'<path d="M4 4h6.5v6.5H4zM13.5 4H20v6.5h-6.5zM13.5 13.5H20V20h-6.5zM4 13.5h6.5V20H4z"/>',
+  users:'<circle cx="8.5" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 13.2c2.5.4 4.5 2.6 4.5 5.3"/>',
+  building:'<path d="M4 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16"/><path d="M14 21v-9a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v9"/><path d="M7 8h1M7 11h1M7 14h1M10 8h1M10 11h1M10 14h1M17 12h1M17 15h1"/><path d="M2 21h20"/>',
+  book:'<path d="M4 5.2C4 4.5 4.6 4 5.3 4H12v16H5.3c-.7 0-1.3-.5-1.3-1.2z"/><path d="M20 5.2c0-.7-.6-1.2-1.3-1.2H12v16h6.7c.7 0 1.3-.5 1.3-1.2z"/>',
+  layers:'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+  puzzle:'<path d="M9 4h4a1 1 0 0 1 1 1v2.2a1.6 1.6 0 0 0 2.8 1c.6-.7 1.7-.7 2.3 0a1.7 1.7 0 0 1 0 2.3c-.7.6-.7 1.7 0 2.3.6.7.6 1.7 0 2.3-.7.7-1.8.7-2.4 0a1.6 1.6 0 0 0-2.7 1V18a1 1 0 0 1-1 1h-4"/><path d="M9 19H5a1 1 0 0 1-1-1v-4a1 1 0 0 0-1.6-.8 1.7 1.7 0 0 1-2.1-2.6c.6-.6.6-1.7 0-2.3a1.7 1.7 0 0 1 2.1-2.6A1 1 0 0 0 4 5V5a1 1 0 0 1 1-1h4"/>',
+  award:'<circle cx="12" cy="8" r="5.2"/><path d="M8.2 12.6L6.5 21l5.5-3 5.5 3-1.7-8.4"/>',
+  fileText:'<path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h5"/>',
+  activity:'<path d="M3 12h4l2.5 7L14 5l2.5 7H21"/>',
+  bell:'<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
+  settings:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V19a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3H8.5a1.7 1.7 0 0 0 1-1.6V2a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1H22a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/>',
+  user:'<circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/>',
+  chevDown:'<path d="M5 8l7 7 7-7"/>', chevRight:'<path d="M8 5l7 7-7 7"/>', chevLeft:'<path d="M16 5l-7 7 7 7"/>',
+  x:'<path d="M5 5l14 14M19 5L5 19"/>', check:'<path d="M5 12l5 5L20 6"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17.5v.1"/>',
+  download:'<path d="M12 3v13"/><path d="M6.5 11.5L12 17l5.5-5.5"/><path d="M4 20h16"/>',
+  star:'<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z"/>',
+  trendUp:'<path d="M4 16l6-6 4 4 7-8"/><path d="M15 6h5v5"/>', trendDown:'<path d="M4 8l6 6 4-4 7 8"/><path d="M15 18h5v-5"/>',
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  sun:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>',
+  moon:'<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  edit:'<path d="M4 20h4l11-11-4-4L4 16v4z"/><path d="M13 6l4 4"/>',
+  trash:'<path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/>',
+  pause:'<path d="M8 5v14M16 5v14"/>', play:'<path d="M6 4l14 8-14 8z"/>',
+  key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+  mail:'<path d="M3 5h18v14H3z"/><path d="M3 6l9 7 9-7"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  upload:'<path d="M12 20V7"/><path d="M6.5 12.5L12 7l5.5 5.5"/><path d="M4 20h16"/>',
+  medal:'<circle cx="12" cy="9" r="5.5"/><path d="M9 13.5L7 21l5-2.5L17 21l-2-7.5"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="M5.5 5.5l13 13"/>',
+  logout:'<path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', filter:'<path d="M4 5h16l-6 8v6l-4-2v-4z"/>',
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4.5H7.5"/><path d="M12 8v4l3 2"/>',
+  laptop:'<path d="M5 5h14v9H5z"/><path d="M2 19h20l-2-3H4z"/>',
+  calendar:'<path d="M4 9h16M7 3v4M17 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/>',
+  target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+  shield:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/>',
+  shieldCheck:'<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
+  heart:'<path d="M12 20s-7-4.3-9.6-9C.8 7.8 2 4.5 5 3.7c2-.5 4 .4 5 2 1-1.6 3-2.5 5-2 3 .8 4.2 4.1 2.6 7.3C19 15.7 12 20 12 20z"/>',
+  clip:'<path d="M9 4h6a1 1 0 0 1 1 1v1h1a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1V5a1 1 0 0 1 1-1z"/><path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1H9z"/>',
+  video:'<rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/>',
+  message:'<path d="M4 4h16v12H8l-4 4z"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.1"/>',
+  zap:'<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>',
+  refresh:'<path d="M4 4v6h6"/><path d="M20 20v-6h-6"/><path d="M5.5 9A7 7 0 0 1 19 8"/><path d="M18.5 15A7 7 0 0 1 5 16"/>',
+  location:'<path d="M12 21s7-6.5 7-11.5A7 7 0 1 0 5 9.5C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  idcard:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><path d="M6 16c0-1.5 1-2.5 2-2.5s2 1 2 2.5M14 9h5M14 13h5"/>',
+};
+function ic(name, cls='icon'){ return `<svg class="${cls}" viewBox="0 0 24 24">${ICONS[name]||''}</svg>`; }
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmt(n){ return Number(n).toLocaleString('en-US'); }
+function fmtDateTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return '—';
+  return d.toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+}
+// Date-only formatter — safe for both ISO timestamps and plain
+// "YYYY-MM-DD" strings (e.g. db.attendance's `date` field), which
+// `new Date(...)` would otherwise parse as UTC midnight and can
+// shift a day off depending on the viewer's timezone.
+function fmtDate(dateStr){
+  if(!dateStr) return '—';
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return '—';
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if(isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function statusChip(status){
+  const map = {
+    A:['chip-ready','Cohort A · Placement Ready'], B:['chip-warn','Cohort B · Near Ready'], C:['chip-risk','Cohort C · High Risk'], entry_level:['chip-neutral','Entry Level'],
+    ready:['chip-ready','Placement Ready'], near:['chip-warn','Near Ready'], risk:['chip-risk','High Risk'], commdef:['chip-info','Communication Deficit'], intdef:['chip-warn','Interview Deficit'],
+    active:['chip-ready','Active'], pending:['chip-warn','Pending Approval'], suspended:['chip-risk','Suspended'], inactive:['chip-neutral','Inactive'],
+    published:['chip-ready','Published'], draft:['chip-warn','Draft'], archived:['chip-neutral','Archived'],
+    live:['chip-ready','Live'], upcoming:['chip-info','Upcoming'], closed:['chip-neutral','Closed'], expired:['chip-risk','Expired'],
+    scheduled:['chip-info','Scheduled'], completed:['chip-ready','Completed'], approved:['chip-ready','Approved'], rejected:['chip-risk','Rejected'], underreview:['chip-warn','Under Review'],
+    present:['chip-ready','Present'], absent:['chip-risk','Absent'],
+  };
+  const [cls,label] = map[status] || ['chip-neutral', status];
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+function avatarChip(name, size=32){
+  const initials = name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+  const colors = ['#E8720C','#1F9E93','#F2A93B','#B95700','#146F67','#C94F2E'];
+  let hash=0; for(const c of name) hash += c.charCodeAt(0);
+  const color = colors[hash % colors.length];
+  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${color};font-size:${size*0.38}px;">${initials}</div>`;
+}
+
+/* ============================================================
+   CHART HELPERS — pure functions returning inline SVG markup
+============================================================ */
+function polar(cx,cy,r,angleDeg){ const a=(angleDeg-90)*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)]; }
+
+function sparklineSVG(values, color, w=110, h=34){
+  const max=Math.max(...values), min=Math.min(...values); const range=(max-min)||1;
+  const step=w/(values.length-1);
+  const pts=values.map((v,i)=>[i*step, h-((v-min)/range)*(h-4)-2]);
+  const line=pts.map(p=>p.join(',')).join(' ');
+  const area=`0,${h} ${line} ${w},${h}`;
+  const id='sp'+Math.random().toString(36).slice(2,9);
+  return `<svg class="kpi-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.35"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+    <polygon points="${area}" fill="url(#${id})"/>
+    <polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function donutSVG(segments, size=180, thickness=26, centerLabel='', centerSub=''){
+  const rawTotal=segments.reduce((a,s)=>a+s.value,0);
+  const total=rawTotal||1;
+  const cx=size/2, cy=size/2, r=(size-thickness)/2;
+  let angle=0, paths='';
+  segments.forEach(seg=>{
+    const frac=seg.value/total; const start=angle; const end=angle+frac*360; angle=end;
+    const large=(end-start)>180?1:0;
+    const [x1,y1]=polar(cx,cy,r,start); const [x2,y2]=polar(cx,cy,r,end-(frac<1?0.8:0));
+    paths+=`<path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}" fill="none" stroke="${seg.color}" stroke-width="${thickness}" stroke-linecap="butt"/>`;
+  });
+  const displayLabel = (centerLabel!==''&&centerLabel!==undefined&&centerLabel!==null) ? centerLabel : rawTotal;
+  return `<svg viewBox="0 0 ${size} ${size}" style="width:100%;max-width:${size}px;display:block;margin:0 auto;">${paths}
+    <text x="${cx}" y="${cy-4}" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="22" font-weight="700" fill="var(--text)">${displayLabel}</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--text-faint)">${centerSub||'STUDENTS'}</text>
+  </svg>`;
+}
+
+function barChartSVG(items, w=560, h=240, color='var(--blue)'){
+  const padL=34, padR=14, padT=14, padB=40;
+  const iw=w-padL-padR, ih=h-padT-padB;
+  const max=Math.max(...items.map(i=>i.value),1)*1.15;
+  const gap=iw/items.length; const bw=gap*0.56;
+  let grid='', bars='', labels='';
+  [0,25,50,75,100].forEach(v=>{ const y=padT+ih-(v/100)*ih; grid+=`<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`; });
+  items.forEach((it,i)=>{
+    const x=padL+i*gap+(gap-bw)/2; const bh=(it.value/max)*ih; const y=padT+ih-bh;
+    bars+=`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="6" fill="${it.color||color}"/>`;
+    bars+=`<text x="${x+bw/2}" y="${y-8}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="var(--text)">${it.value}${it.suffix||''}</text>`;
+    labels+=`<text x="${x+bw/2}" y="${h-14}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10.5" fill="var(--text-faint)">${it.label}</text>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">${grid}${bars}${labels}</svg>`;
+}
+
+function lineChartSVG(series, months, w=560, h=220){
+  const padL=30, padR=14, padT=16, padB=28;
+  const iw=w-padL-padR, ih=h-padT-padB;
+  const stepX=iw/(months.length-1);
+  let grid='', axisLabels='';
+  [0,25,50,75,100].forEach(v=>{
+    const y=padT+ih-(v/100)*ih;
+    grid+=`<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+    axisLabels+=`<text x="4" y="${y+3}" font-family="JetBrains Mono, monospace" font-size="9.5" fill="var(--text-faint)">${v}</text>`;
+  });
+  months.forEach((m,i)=>{ axisLabels+=`<text x="${padL+i*stepX}" y="${h-8}" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="var(--text-faint)">${m}</text>`; });
+  let lines='';
+  series.forEach(s=>{
+    const pts=s.values.map((v,i)=> v>0 ? [padL+i*stepX, padT+ih-(v/100)*ih] : null);
+    const validPts=pts.filter(Boolean);
+    const path=validPts.map((p,i)=>(i===0?'M':'L')+p[0]+','+p[1]).join(' ');
+    lines+=`<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    lines+=validPts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${s.color}"/>`).join('');
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">${grid}${lines}${axisLabels}</svg>`;
+}
+
+function radarSVG(axes, size=280){
+  const cx=size/2, cy=size/2, r=size/2-42, n=axes.length;
+  let grid='';
+  [20,40,60,80,100].forEach(pct=>{
+    const pts=axes.map((_,i)=>polar(cx,cy,r*pct/100, i*360/n).join(',')).join(' ');
+    grid+=`<polygon points="${pts}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+  });
+  axes.forEach((ax,i)=>{
+    const [x,y]=polar(cx,cy,r,i*360/n);
+    grid+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)" stroke-width="1"/>`;
+  });
+  const dataPts=axes.map((ax,i)=>polar(cx,cy,r*ax.value/100, i*360/n).join(',')).join(' ');
+  let labels='';
+  axes.forEach((ax,i)=>{
+    const [x,y]=polar(cx,cy,r+22, i*360/n);
+    labels+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-family="Inter, sans-serif" font-size="11" fill="var(--text-soft)">${ax.label}</text>`;
+  });
+  return `<svg viewBox="0 0 ${size} ${size}" style="width:100%;max-width:${size+40}px;display:block;margin:0 auto;">
+    ${grid}
+    <polygon points="${dataPts}" fill="rgba(232,114,12,0.18)" stroke="var(--blue-deep)" stroke-width="2"/>
+    ${axes.map((ax,i)=>{ const [x,y]=polar(cx,cy,r*ax.value/100,i*360/n); return `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--blue-deep)"/>`; }).join('')}
+    ${labels}
+  </svg>`;
+}
+
+function heatmapSVG(rows, cols, matrix, w=560){
+  const cell=Math.min(70,(w-140)/cols.length);
+  const h=rows.length*32+40;
+  let cells='';
+  rows.forEach((r,ri)=>{
+    cells+=`<text x="130" y="${40+ri*32+16}" font-family="Inter" font-size="11" fill="var(--text-soft)" text-anchor="end">${r}</text>`;
+    cols.forEach((c,ci)=>{
+      const v=matrix[ri][ci]; const alpha=0.12+(v/100)*0.75;
+      cells+=`<rect x="${140+ci*cell}" y="${40+ri*32}" width="${cell-4}" height="24" rx="6" fill="rgba(232,114,12,${alpha.toFixed(2)})"/>`;
+      cells+=`<text x="${140+ci*cell+(cell-4)/2}" y="${40+ri*32+16}" font-family="JetBrains Mono" font-size="10" text-anchor="middle" fill="${v>55?'#fff':'var(--text)'}">${v}</text>`;
+    });
+  });
+  cols.forEach((c,ci)=>{ cells+=`<text x="${140+ci*cell+(cell-4)/2}" y="26" font-family="Inter" font-size="10.5" text-anchor="middle" fill="var(--text-faint)">${c}</text>`; });
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">${cells}</svg>`;
+}
+
+/* ============================================================
+   MOCK / PLACEHOLDER DATA — API-ready shape. Every object below
+   mirrors what a real backend response would look like, so wiring
+   up real endpoints later is a drop-in replacement of these consts.
+============================================================ */
+const SKILL_CATEGORIES = [
+  {key:'comm', label:'Communication'}, {key:'apt', label:'Aptitude'}, {key:'tech', label:'Technical Skills'},
+  {key:'prog', label:'Programming'}, {key:'logic', label:'Logical Reasoning'}, {key:'verbal', label:'Verbal Ability'},
+  {key:'quant', label:'Quantitative Ability'}, {key:'resume', label:'Resume'}, {key:'interview', label:'Interview Readiness'},
+  {key:'behavior', label:'Behavioral Skills'}, {key:'soft', label:'Soft Skills'}, {key:'ai', label:'AI Readiness'},
+];
+
+// GET /api/departments — each item: { id, name, students, avgScore, placement, highRisk, intervention, rank }
+const DEPARTMENTS = [];
+DEPARTMENTS.sort((a,b)=>b.avgScore-a.avgScore).forEach((d,i)=>d.rank=i+1);
+
+function mkStudent(o){
+  const overall = Math.round((o.comm+o.tech+o.apt+o.prof+o.interview)/5);
+  let status='risk';
+  if(overall>=75 && o.comm>=70 && o.interview>=75 && o.prof>=75) status='ready';
+  else if(overall>=50 && o.comm<70) status='commdef';
+  else if(overall>=50 && o.interview<75) status='intdef';
+  else if(overall>=60) status='near';
+  return Object.assign(o,{overall,status});
+}
+// GET /api/students — each item is built via mkStudent({ id, name, reg, dept, year, section, email, phone,
+// comm, tech, apt, prof, interview, prog, logic, verbal, quant, resume, behavior, soft, ai, improvement,
+// cohort, assessmentStatus, trainer, attendance, lastActivity, inactive, photo })
+// GET /api/collegeadmin/students — LIVE, never mocked. Each item's `status`
+// (and `cohort`) is exactly the A/B/C/entry_level value currently stored on
+// db.users.cohort for that student — the SAME field Student, Trainer, and
+// Super Admin dashboards read. There is no local recomputation of cohort
+// here: whatever the Super Admin's Placement Rules last assigned is what
+// renders, on every page load, with no caching between loads.
+let STUDENTS = [];
+
+// Cohort buckets mirror the platform-wide Placement Rules engine exactly:
+// Cohort A (Placement Ready) / Cohort B (Near Ready) / Cohort C (High Risk),
+// plus Entry Level for students who haven't been scored yet. These are NOT
+// independently-invented thresholds — the underlying assignment always
+// comes from the Super Admin's live db.placement_rules via the shared
+// backend cohort engine; this table only supplies display metadata.
+const COHORT_RULES = [
+  { key:'A', label:'Cohort A · Placement Ready', icon:'shieldCheck', color:'var(--ready)', rule:'Final Employability Score meets or exceeds the Cohort A threshold currently configured in Placement Rules.' },
+  { key:'B', label:'Cohort B · Near Ready', icon:'trendUp', color:'var(--warn, var(--violet))', rule:'Final Employability Score meets the Cohort B threshold but is below the Cohort A threshold.' },
+  { key:'C', label:'Cohort C · High Risk', icon:'alert', color:'var(--risk)', rule:'Final Employability Score is below the Cohort B threshold currently configured in Placement Rules.' },
+  { key:'entry_level', label:'Entry Level', icon:'user', color:'var(--text-faint, #9a8f80)', rule:'Baseline assessment score and/or interview score not yet recorded — cohort not generated yet.' },
+];
+function cohortStudents(key){
+  return STUDENTS.filter(s=>s.status===key);
+}
+
+// GET /api/collegeadmin/assessments — each item: { id, name, createdBy, status, totalQuestions, totalMarks, scheduledDate, endDate, responseCount }
+let ASSESSMENTS = [];
+let assessmentsLoaded = false;
+let assessmentsLoading = false;
+
+// GET /api/interventions — each item: { id, name, category, description, effectiveness, sessions, avgImprovement }
+const INTERVENTIONS = [];
+
+// GET /api/interventions/sessions — each item: { id, intervention, cohort, trainer, dept, venue, date, time, capacity, enrolled, status, present, absent }
+const SESSIONS = [];
+
+// GET /api/notifications — each item: { id, type, icon, title, desc, time, unread }
+const NOTIFICATIONS = [];
+
+// GET /api/audit-logs — each item: { user, role, time, ip, action }
+const AUDIT_LOGS = [];
+
+// GET /api/question-banks — each item: { name, category, questions, difficulty }
+const QUESTION_BANKS = [];
+
+// GET /api/reports/recent — each item: { name, generatedAt, generatedBy, format }
+const PAST_REPORTS = [];
+
+// GET /api/account/sessions — each item: { id, device, current }
+const ACTIVE_SESSIONS = [];
+
+// Chart axis labels + series data for the placement-readiness trend chart.
+// GET /api/analytics/placement-trend -> { months: [...], baseline: [...], mid: [...], final: [...] }
+const MONTHS = [];
+const TREND = { baseline:[], mid:[], final:[] };
+
+/* ============================================================
+   BACKEND-READY SERVICE LAYER
+   Every mutation in the UI goes through `api.*` below instead of
+   touching the in-memory arrays directly. Right now each call
+   resolves against local arrays after a simulated network delay;
+   swapping the body of any function for a `fetch('/api/...')` call
+   against the FastAPI backend is a drop-in change — nothing in the
+   page code needs to change. Endpoint each maps to is noted inline.
+============================================================ */
+const API_LATENCY = 300;
+function apiDelay(v){ return new Promise(res=>setTimeout(()=>res(v), API_LATENCY)); }
+let STUDENT_SEQ=STUDENTS.length, DEPT_SEQ=DEPARTMENTS.length, ASSESS_SEQ=ASSESSMENTS.length, SESSION_SEQ=SESSIONS.length, NOTIF_SEQ=NOTIFICATIONS.length;
+function nowStamp(){ const d=new Date(); return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+// GET /api/me — the logged-in admin's identity
+const CURRENT_USER = { name:'', role:'' };
+// GET /api/college-profile — institution-level details shown in the header/hero/profile page
+const COLLEGE_PROFILE = { name:'', email:'', phone:'', founded:'', academicYear:'' };
+
+const api = {
+  audit: {
+    log(action){ // POST /api/audit-logs
+      AUDIT_LOGS.unshift({ user:CURRENT_USER.name, role:CURRENT_USER.role, time:'Just now · '+nowStamp(), ip:'—', action }); // ip is attached server-side on the real /api/audit-logs endpoint
+      return apiDelay(true);
+    },
+    list(){ return apiDelay(AUDIT_LOGS); } // GET /api/audit-logs
+  },
+  notifications: {
+    push(n){ // POST /api/notifications
+      NOTIFICATIONS.unshift(Object.assign({ id:'n'+(++NOTIF_SEQ), time:'Just now', unread:true }, n));
+      return apiDelay(true);
+    },
+    list(){ return apiDelay(NOTIFICATIONS); } // GET /api/notifications
+  },
+  students: {
+    create(data){ // POST /api/students
+      return apiDelay().then(()=>{
+        if(STUDENTS.some(s=>s.reg.toLowerCase()===data.reg.toLowerCase())){ const e=new Error('Register number already exists'); e.code='DUPLICATE_REG'; throw e; }
+        const base = { comm:60,tech:60,apt:60,prof:60,interview:60,prog:60,logic:60,verbal:60,quant:60,resume:60,behavior:60,soft:60,ai:60, improvement:0, assessmentStatus:'not-started', trainer:'Unassigned', attendance:0, lastActivity:'Just now', history:[{stage:'Baseline', overall:0}] };
+        const s = mkStudent(Object.assign(base, data, { id:'s'+(++STUDENT_SEQ) }));
+        s.inactive=false; s.photo=null; s.idx=STUDENTS.length;
+        STUDENTS.push(s);
+        const dept = DEPARTMENTS.find(d=>d.name===s.dept); if(dept) dept.students++;
+        return s;
+      });
+    },
+    update(id, data){ // PATCH /api/students/{id}
+      return apiDelay().then(()=>{
+        const s = STUDENTS.find(x=>x.id===id); if(!s) throw new Error('NOT_FOUND');
+        if(data.reg && data.reg.toLowerCase()!==s.reg.toLowerCase() && STUDENTS.some(x=>x.id!==id && x.reg.toLowerCase()===data.reg.toLowerCase())){ const e=new Error('Register number already exists'); e.code='DUPLICATE_REG'; throw e; }
+        Object.assign(s, data);
+        return mkStudent(s);
+      });
+    },
+    bulkImport(rows){ // POST /api/students/bulk-import
+      return apiDelay().then(()=>{
+        let ok=0, failed=0;
+        rows.forEach(r=>{
+          const name = (r.name||r['Student Name']||r['Full Name']||'').toString().trim();
+          const reg = (r.reg||r['Register Number']||r['Register No']||'').toString().trim();
+          if(!name || !reg || STUDENTS.some(s=>s.reg.toLowerCase()===reg.toLowerCase())){ failed++; return; }
+          const dept = (r.dept||r['Department']||(DEPARTMENTS[0]&&DEPARTMENTS[0].name)||'Unassigned').toString().trim();
+          const s = mkStudent({ id:'s'+(++STUDENT_SEQ), name, reg, dept,
+            year:(r.year||r['Year']||'1st Year').toString(), section:(r.section||r['Section']||'A').toString(),
+            email:(r.email||r['Email']||'').toString(), phone:(r.phone||r['Phone']||'').toString(),
+            cohort:(r.cohort||r['Cohort']||'2026 · Batch A').toString(),
+            comm:60,tech:60,apt:60,prof:60,interview:60,prog:60,logic:60,verbal:60,quant:60,resume:60,behavior:60,soft:60,ai:60,
+            improvement:0, assessmentStatus:'not-started', trainer:'Unassigned', attendance:0, lastActivity:'Just now',
+            history:[{stage:'Baseline', overall:0}] });
+          s.inactive=false; s.photo=null; s.idx=STUDENTS.length;
+          STUDENTS.push(s);
+          const d = DEPARTMENTS.find(x=>x.name===dept); if(d) d.students++;
+          ok++;
+        });
+        return { ok, failed, total: rows.length };
+      });
+    }
+  },
+  departments: {
+    create(data){ return apiDelay().then(()=>{ const d=Object.assign({ id:'d'+(++DEPT_SEQ), students:0, avgScore:0, placement:0, highRisk:0, intervention:0, rank:DEPARTMENTS.length+1 }, data); DEPARTMENTS.push(d); return d; }); }, // POST /api/departments
+    update(id, data){ return apiDelay().then(()=>{ const d=DEPARTMENTS.find(x=>x.id===id); if(d) Object.assign(d,data); return d; }); } // PATCH /api/departments/{id}
+  },
+  assessments: {
+    create(data){ return apiDelay().then(()=>{ const a=Object.assign({ id:'a'+(++ASSESS_SEQ), participants:0, completion:0 }, data); ASSESSMENTS.push(a); return a; }); }, // POST /api/assessments
+    update(id, data){ return apiDelay().then(()=>{ const a=ASSESSMENTS.find(x=>x.id===id); if(!a) throw new Error('NOT_FOUND'); Object.assign(a,data); return a; }); } // PATCH /api/assessments/{id}
+  },
+  interventions: {
+    scheduleSession(data){ return apiDelay().then(()=>{ const s=Object.assign({ id:'sc'+(++SESSION_SEQ), status:'scheduled', present:0, absent:0 }, data); SESSIONS.push(s); return s; }); } // POST /api/interventions/sessions
+  },
+  reports: {
+    generate(key){ return apiDelay({ key, generatedAt:nowStamp() }); } // GET /api/reports/{key}
+  }
+};
+function refreshDashboardLive(){ if(STATE.page==='dashboard') renderPage(); else refreshSidebarCounts(); }
+
+/* ============================================================
+   ASSESSMENT MANAGEMENT — REAL BACKEND CLIENT
+   College Admin has read-only access to assessments + student
+   responses for their own college. Every call below goes to the
+   live Flask + MongoDB backend (cookie-based JWT) — no mock data.
+============================================================ */
+const COLLEGE_ADMIN_API_BASE = '/api/collegeadmin';
+async function collegeAdminApi(path, { method = 'GET', body } = {}){
+  try{
+    const res = await fetch(COLLEGE_ADMIN_API_BASE + path, {
+      method,
+      credentials: 'include',
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    let data = {};
+    try{ data = await res.json(); }catch(e){ /* empty body */ }
+    return { ok: res.ok, status: res.status, data };
+  }catch(e){
+    return { ok:false, status:0, data:{ message:'Could not reach the server. Check your connection and try again.' } };
+  }
+}
+
+async function loadAssessments(force=false){
+  if((assessmentsLoaded && !force) || assessmentsLoading) return;
+  assessmentsLoading = true;
+  const { ok, data } = await collegeAdminApi('/assessments');
+  assessmentsLoading = false;
+  assessmentsLoaded = true;
+  if(ok && Array.isArray(data.assessments)) ASSESSMENTS = data.assessments;
+  if(STATE.page==='assessments') renderPage();
+}
+
+/* ============================================================
+   STUDENTS / COHORTS — REAL BACKEND CLIENT
+   Every cohort shown anywhere on this dashboard (Dashboard KPIs,
+   Student Management, Cohort Management, Analytics) is loaded here,
+   fresh, from GET /api/collegeadmin/students — never cached beyond
+   the current page view, and never recomputed on the frontend.
+   Re-running loadStudents(true) (e.g. after a manual refresh, or
+   whenever the admin lands on a cohort-related page) guarantees no
+   page can show a cohort that has since changed on the server, such
+   as right after a Super Admin edits Placement Rules.
+============================================================ */
+let studentsLoaded = false;
+let studentsLoading = false;
+function _mapStudentFromApi(s){
+  const cohort = s.cohort || 'entry_level'; // 'A' | 'B' | 'C' | 'entry_level' — straight from db.users.cohort
+  const scored = s.baselineAssessmentScore != null && s.interviewScore != null;
+  // Real attendance straight from the roster payload (computed server-side
+  // from db.attendance, the same shared source the Student Dashboard uses).
+  const attTotal = s.attendanceTotal ?? 0;
+  const attPresent = s.attendancePresent ?? 0;
+  const attAbsent = s.attendanceAbsent ?? 0;
+  const attPct = attTotal ? Math.round((attPresent / attTotal) * 100) : 0;
+  return {
+    id: s.id,
+    name: s.name || '(No name on file)',
+    reg: s.rollNumber || '—',
+    dept: s.department || 'Unassigned',
+    year: '—',
+    section: '—',
+    email: s.email || '—',
+    phone: '—',
+    overall: s.finalEmployabilityScore != null ? Math.round(s.finalEmployabilityScore) : 0,
+    baseline: s.baselineAssessmentScore != null ? s.baselineAssessmentScore : null,
+    interview: s.interviewScore != null ? s.interviewScore : null,
+    finalEmployability: s.finalEmployabilityScore != null ? s.finalEmployabilityScore : null,
+    cohortKey: cohort,
+    cohort: (COHORT_RULES.find(r=>r.key===cohort)||{}).label || cohort,
+    status: cohort,                 // one of COHORT_RULES[].key — drives every filter/chip
+    assessmentStatus: scored ? 'completed' : 'scheduled',
+    trainer: '—',
+    attendance: attPct,
+    attendanceTotal: attTotal,
+    attendancePresent: attPresent,
+    attendanceAbsent: attAbsent,
+    attendanceLastUpdated: s.attendanceLastUpdated,
+    improvement: (s.baselineAssessmentScore != null && s.finalEmployabilityScore != null)
+      ? Math.max(0, Math.round(s.finalEmployabilityScore - s.baselineAssessmentScore)) : null,
+    inactive: false,
+    photo: null,
+    idx: 0,
+  };
+}
+async function loadStudents(force=false){
+  if((studentsLoaded && !force) || studentsLoading) return;
+  studentsLoading = true;
+  const { ok, data } = await collegeAdminApi('/students');
+  studentsLoading = false;
+  studentsLoaded = true;
+  if(ok && Array.isArray(data.students)){
+    STUDENTS = data.students.map(_mapStudentFromApi);
+    STUDENTS.forEach((s,i)=>{ s.idx=i; });
+  }
+  if(['dashboard','students','student-profile','cohorts','analytics'].includes(STATE.page)) renderPage();
+}
+
+const ASSESSMENT_RESPONSES_CACHE = {};
+async function loadAssessmentResponses(assessmentId, force=false){
+  if(!force && ASSESSMENT_RESPONSES_CACHE[assessmentId]) return ASSESSMENT_RESPONSES_CACHE[assessmentId];
+  const { ok, data } = await collegeAdminApi(`/assessments/${assessmentId}/responses`);
+  const result = ok ? { name: data.assessment && data.assessment.name, responses: data.responses || [] } : { name: null, responses: [], error: true };
+  ASSESSMENT_RESPONSES_CACHE[assessmentId] = result;
+  if(STATE.page==='assessment-responses' && STATE.params.id===assessmentId) renderPage();
+  return result;
+}
+
+/* ============================================================
+   STATE + NAV CONFIG
+============================================================ */
+const STATE = {
+  page:'dashboard', params:{}, sidebarCollapsed:false, mobileOpen:false,
+  tab:{ students:'list', assessments:'all', cohorts:'overview', interventions:'library', notifCenter:false },
+  filters:{ students:{ dept:'all', year:'all', section:'all', status:'all', cohort:'all', q:'' } },
+  page_num:{ students:1 },
+};
+const UNREAD_NOTIFS = ()=>NOTIFICATIONS.filter(n=>n.unread).length;
+
+const NAV = [
+  { section:'Overview', items:[ {key:'dashboard', label:'Dashboard', icon:'grid'} ] },
+  { section:'People', items:[
+    {key:'students', label:'Students', icon:'users'},
+    {key:'departments', label:'Departments', icon:'layers'},
+  ]},
+  { section:'Measurement', items:[
+    {key:'assessments', label:'Assessment Management', icon:'fileText'},
+    {key:'attendance', label:'Attendance', icon:'calendar'},
+    {key:'cohorts', label:'Cohorts', icon:'target'},
+    {key:'interventions', label:'Interventions', icon:'puzzle'},
+  ]},
+  { section:'Insights', items:[
+    {key:'reports', label:'Reports', icon:'fileText'},
+    {key:'analytics', label:'Analytics', icon:'activity'},
+    {key:'notifications', label:'Notifications', icon:'bell', count: UNREAD_NOTIFS() },
+    {key:'audit', label:'Audit Logs', icon:'history'},
+  ]},
+  { section:'Account', items:[
+    {key:'profile', label:'Profile & Settings', icon:'settings'},
+    {key:'logout', label:'Logout', icon:'logout'},
+  ]},
+];
+const PAGE_META = {
+  dashboard:{ title:'Dashboard', crumb:'Overview' },
+  students:{ title:'Student Management', crumb:'People' },
+  'student-profile':{ title:'Student Profile', crumb:'People / Students' },
+  departments:{ title:'Department Management', crumb:'People' },
+  assessments:{ title:'Assessment Management', crumb:'Measurement' },
+  'assessment-responses':{ title:'Student Responses', crumb:'Measurement / Assessment Management' },
+  attendance:{ title:'Attendance', crumb:'Measurement' },
+  cohorts:{ title:'Cohort Management', crumb:'Measurement' },
+  interventions:{ title:'Intervention Management', crumb:'Measurement' },
+  reports:{ title:'Reports', crumb:'Insights' },
+  analytics:{ title:'Analytics', crumb:'Insights' },
+  notifications:{ title:'Notifications', crumb:'Insights' },
+  audit:{ title:'Audit Logs', crumb:'Insights' },
+  profile:{ title:'Profile & Settings', crumb:'Account' },
+};
+
+/* ============================================================
+   APP SHELL
+============================================================ */
+function buildShell(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+  <div class="admin-shell">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" data-action="close-mobile-sidebar"></div>
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-main">
+          <img class="brand-logo" src="procapSys logo.png" alt="ProCapSys">
+          <div class="brand-text">ProCapSys<small>College Admin</small></div>
+        </div>
+        <button class="btn-icon sidebar-close-btn" data-action="close-mobile-sidebar" aria-label="Close navigation menu">${ic('x')}</button>
+      </div>
+      <nav class="sidebar-scroll" aria-label="Sections">
+        ${NAV.map(sec=>`
+          <div class="side-section-label">${sec.section}</div>
+          <div class="side-nav">
+            ${sec.items.map(it=>`
+              <a href="#" class="side-link" data-action="${it.key==='logout'?'logout':'nav'}" data-page="${it.key}" title="${it.label}" aria-label="${it.label}">
+                ${ic(it.icon)}<span class="label">${it.label}</span>
+                ${it.count?`<span class="count">${it.count}</span>`:''}
+              </a>`).join('')}
+          </div>`).join('')}
+      </nav>
+      <div class="sidebar-foot">
+        <button class="sidebar-collapse-btn" data-action="toggle-sidebar" aria-label="Collapse navigation menu" aria-expanded="true" aria-controls="sidebar">${ic('chevLeft')}<span class="label">Collapse</span></button>
+      </div>
+    </aside>
+    <div class="main-col">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon mobile-menu-btn" id="hamburgerBtn" data-action="open-mobile-sidebar" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">${ic('menu')}</button>
+          <div class="page-title-wrap">
+            <div class="breadcrumb" id="crumbText"></div>
+            <h1 id="pageTitleText"></h1>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-box"><span>${ic('search','icon icon-sm')}</span><input type="text" placeholder="Search students, trainers, cohorts…" id="globalSearch"></div>
+          <button class="btn-icon theme-toggle" data-action="toggle-theme" title="Toggle theme">${ic('sun')}</button>
+          <div style="position:relative;">
+            <button class="btn-icon bell-wrap" data-action="toggle-notif-panel" title="Notifications">${ic('bell')}${UNREAD_NOTIFS()?'<span class="bell-dot"></span>':''}</button>
+            <div id="notifPanel"></div>
+          </div>
+          <div class="profile-chip" data-action="nav" data-page="profile">
+            ${avatarChip(CURRENT_USER.name || 'User')}
+            <div class="who"><b>${esc(CURRENT_USER.name || '—')}</b><span>${esc(CURRENT_USER.role || '—')}</span></div>
+          </div>
+        </div>
+      </header>
+      <main class="main-content" id="page-root"></main>
+    </div>
+  </div>`;
+}
+
+function updateTopbar(){
+  const meta = PAGE_META[STATE.page] || {title:'Dashboard', crumb:''};
+  document.getElementById('pageTitleText').textContent = meta.title;
+  document.getElementById('crumbText').textContent = meta.crumb;
+}
+function updateSidebarActive(){
+  document.querySelectorAll('.side-link').forEach(a=>{
+    const isActive = a.dataset.page===STATE.page || (STATE.page==='student-profile' && a.dataset.page==='students') || (STATE.page==='assessment-responses' && a.dataset.page==='assessments');
+    a.classList.toggle('active', isActive);
+    if(isActive) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
+  });
+}
+function refreshSidebarCounts(){
+  const notifEl = document.querySelector('.side-link[data-page="notifications"] .count');
+  if(notifEl) notifEl.textContent = UNREAD_NOTIFS();
+  const bellDot = document.querySelector('.bell-dot');
+  if(bellDot && !UNREAD_NOTIFS()) bellDot.remove();
+}
+
+let MOBILE_SIDEBAR_TRIGGER = null;
+function openMobileSidebar(){
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const hamburger = document.getElementById('hamburgerBtn');
+  if(!sidebar || sidebar.classList.contains('mobile-open')) return;
+  MOBILE_SIDEBAR_TRIGGER = document.activeElement;
+  sidebar.classList.add('mobile-open');
+  backdrop.classList.add('show');
+  document.documentElement.classList.add('no-scroll');
+  hamburger?.setAttribute('aria-expanded','true');
+  const firstLink = sidebar.querySelector('.side-link, .sidebar-close-btn');
+  firstLink?.focus();
+}
+function closeMobileSidebar(){
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const hamburger = document.getElementById('hamburgerBtn');
+  if(!sidebar || !sidebar.classList.contains('mobile-open')) return;
+  sidebar.classList.remove('mobile-open');
+  backdrop.classList.remove('show');
+  document.documentElement.classList.remove('no-scroll');
+  hamburger?.setAttribute('aria-expanded','false');
+  (MOBILE_SIDEBAR_TRIGGER || hamburger)?.focus();
+  MOBILE_SIDEBAR_TRIGGER = null;
+}
+function goPage(page, params={}){
+  STATE.page = page; STATE.params = params;
+  // Always re-pull the student roster when landing on any page that shows
+  // attendance, so the Attendance module (totals on Student Details, the
+  // Student Management table, cohort views) auto-refreshes to whatever the
+  // Super Admin most recently marked — never a stale cached snapshot.
+  if(['dashboard','students','student-profile','cohorts','analytics'].includes(page)) loadStudents(true);
+  renderPage();
+  if(document.getElementById('sidebar')?.classList.contains('mobile-open')) closeMobileSidebar();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+window.addEventListener('resize', ()=>{
+  if(window.innerWidth > 1024 && document.getElementById('sidebar')?.classList.contains('mobile-open')){
+    closeMobileSidebar();
+  }
+});
+document.addEventListener('keydown', (e)=>{
+  const sidebar = document.getElementById('sidebar');
+  if(!sidebar || !sidebar.classList.contains('mobile-open')) return;
+  if(e.key==='Escape'){ closeMobileSidebar(); return; }
+  if(e.key==='Tab'){
+    const focusable = sidebar.querySelectorAll('a.side-link, button:not([disabled])');
+    if(!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+});
+
+function renderPage(){
+  const root = document.getElementById('page-root');
+  const fns = {
+    dashboard: pageDashboard,
+    students: pageStudents,
+    'student-profile': ()=>pageStudentProfile(STATE.params.id),
+    departments: pageDepartments,
+    assessments: pageAssessments,
+    'assessment-responses': ()=>pageAssessmentResponses(STATE.params.id),
+    attendance: pageAttendance,
+    cohorts: pageCohorts,
+    interventions: pageInterventions,
+    reports: pageReports,
+    analytics: pageAnalytics,
+    notifications: pageNotifications,
+    audit: pageAudit,
+    profile: pageProfile,
+  };
+  const fn = fns[STATE.page] || pageDashboard;
+  root.innerHTML = `<div class="page active">${fn()}</div>`;
+  updateTopbar();
+  updateSidebarActive();
+  refreshSidebarCounts();
+}
+
+/* ============================================================
+   TOAST + MODAL SYSTEM
+============================================================ */
+function showToast(msg, type='success'){
+  const iconMap = {success:'check', error:'x', info:'info'};
+  const root = document.getElementById('toast-root');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `${ic(iconMap[type]||'check')}<span>${esc(msg)}</span>`;
+  root.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s, transform .3s'; el.style.opacity='0'; el.style.transform='translateX(30px)'; setTimeout(()=>el.remove(),300); }, 3200);
+}
+function openModal(html, size=''){
+  document.getElementById('modal-root').innerHTML = `<div class="modal-overlay" data-action="close-modal"><div class="modal ${size}" onclick="event.stopPropagation()">${html}</div></div>`;
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+
+function modalHeader(title, sub){
+  return `<div class="modal-head"><div><h3>${esc(title)}</h3>${sub?`<p>${esc(sub)}</p>`:''}</div><button class="btn-icon" data-action="close-modal">${ic('x','icon icon-sm')}</button></div>`;
+}
+function confirmModal({title, body, confirmLabel, confirmClass='btn-primary', onConfirm}){
+  window.__pendingConfirm = onConfirm;
+  openModal(`
+    ${modalHeader(title)}
+    <div class="modal-body"><p style="font-size:14px;color:var(--text-soft);">${body}</p></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-action="close-modal">Cancel</button>
+      <button class="btn ${confirmClass}" data-action="run-confirm">${confirmLabel}</button>
+    </div>`);
+}
+
+
+/* ============================================================
+   PAGE: DASHBOARD
+============================================================ */
+const KPI_TINT = { blue:'rgba(232,114,12,0.13)', violet:'rgba(242,169,59,0.16)', cyan:'rgba(31,158,147,0.14)', risk:'rgba(232,86,63,0.13)', ink:'rgba(27,20,12,0.07)' };
+const KPI_FG = { blue:'var(--blue)', violet:'var(--blue-deep)', cyan:'var(--cyan)', risk:'var(--risk)', ink:'var(--ink)' };
+
+function pct(part, total){ return total ? Math.round(part/total*100) : 0; }
+function dashboardStats(){
+  const total = STUDENTS.length;
+  const ready = STUDENTS.filter(s=>s.status==='A').length;
+  const near = STUDENTS.filter(s=>s.status==='B').length;
+  const risk = STUDENTS.filter(s=>s.status==='C').length;
+  const avgScore = total ? Math.round(STUDENTS.reduce((a,s)=>a+s.overall,0)/total) : 0;
+  const completion = pct(STUDENTS.filter(s=>s.assessmentStatus==='completed').length, total);
+  return {total, ready, near, risk, avgScore, completion};
+}
+function kpiCard(k){
+  const up = k.trend>=0;
+  return `<div class="kpi-card">
+    <div class="kpi-top">
+      <div class="kpi-ic" style="background:${KPI_TINT[k.tone]};color:${KPI_FG[k.tone]}">${ic(k.icon)}</div>
+      ${k.trend!==undefined?`<span class="kpi-trend ${up?'up':'down'}">${ic(up?'trendUp':'trendDown','icon icon-sm')}${Math.abs(k.trend)}%</span>`:''}
+    </div>
+    <div class="kpi-value">${k.value}</div>
+    <div class="kpi-label">${k.label}</div>
+    ${k.spark?sparklineSVG(k.spark, up?'var(--blue)':'var(--risk)'):''}
+  </div>`;
+}
+function heroIllustrationSVG(){
+  return `<svg viewBox="0 0 230 150" style="width:100%;height:100%;">
+    <circle cx="60" cy="75" r="46" fill="rgba(255,255,255,0.06)"/>
+    <circle cx="150" cy="40" r="26" fill="rgba(242,169,59,0.22)"/>
+    <circle cx="185" cy="105" r="34" fill="rgba(31,158,147,0.18)"/>
+    <g stroke="rgba(251,243,231,0.5)" stroke-width="1.4" fill="none">
+      <path d="M20 110 L60 75 L100 95 L150 40 L200 60"/>
+    </g>
+    ${[[20,110],[60,75],[100,95],[150,40],[200,60]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4" fill="var(--violet)"/>`).join('')}
+    <rect x="16" y="120" width="198" height="6" rx="3" fill="rgba(255,255,255,0.08)"/>
+    <rect x="16" y="120" width="132" height="6" rx="3" fill="var(--cyan)"/>
+  </svg>`;
+}
+function kpiStripItem(k){
+  const up = k.trend>=0;
+  return `<div class="kpi-strip-item">
+    <div class="kpi-strip-ic" style="background:${KPI_TINT[k.tone]};color:${KPI_FG[k.tone]}">${ic(k.icon,'icon icon-sm')}</div>
+    <div class="kpi-strip-value">${k.value}</div>
+    <div class="kpi-strip-label">${k.label}</div>
+    ${k.trend!==undefined?`<span class="kpi-strip-trend ${up?'up':'down'}">${ic(up?'trendUp':'trendDown','icon icon-sm')}${Math.abs(k.trend)}%</span>`:''}
+  </div>`;
+}
+const DASH_SORT = { field:'avgScore', dir:'desc' };
+function sortedDeptTable(){
+  const list = DEPARTMENTS.slice();
+  const {field, dir} = DASH_SORT;
+  list.sort((a,b)=> dir==='asc' ? (a[field]>b[field]?1:-1) : (a[field]<b[field]?1:-1));
+  return list;
+}
+function riskLevel(d){ return d.highRisk>45?'risk':d.highRisk>25?'near':'ready'; }
+function pageDashboard(){
+  loadStudents();
+  const st = dashboardStats();
+  const activeAssessments = ASSESSMENTS.filter(a=>a.status==='live'||a.status==='upcoming').length;
+
+  // NOTE: `trend` (period-over-period % change) is left undefined until the backend exposes a
+  // previous-period comparison endpoint. kpiStripItem() already renders the trend badge conditionally.
+  const STRIP_KPIS = [
+    {label:'Total Students', value:fmt(st.total), icon:'users', tone:'blue'},
+    {label:'Departments', value:DEPARTMENTS.length, icon:'layers', tone:'violet'},
+    {label:'Active Assessments', value:activeAssessments, icon:'book', tone:'blue'},
+    {label:'Placement Ready', value:pct(st.ready, st.total)+'%', icon:'shieldCheck', tone:'cyan'},
+    {label:'Near Ready', value:pct(st.near, st.total)+'%', icon:'clock', tone:'violet'},
+    {label:'High Risk', value:pct(st.risk, st.total)+'%', icon:'alert', tone:'risk'},
+    {label:'Scheduled Interventions', value:SESSIONS.filter(s=>s.status==='scheduled').length, icon:'puzzle', tone:'blue'},
+  ];
+
+  // Each entry only appears when the underlying data actually supports it — no fabricated counts.
+  const scheduledCount = SESSIONS.filter(s=>s.status==='scheduled').length;
+  const pendingAssessmentCount = STUDENTS.filter(s=>s.assessmentStatus!=='completed').length;
+  const ACTIONS_REQUIRED = [
+    ...(scheduledCount ? [{urgent:false, icon:'calendar', text:`${scheduledCount} intervention session${scheduledCount!==1?'s':''} scheduled this week`, sub:'Interventions', page:'interventions', tab:'scheduled'}] : []),
+    ...(pendingAssessmentCount ? [{urgent:false, icon:'fileText', text:`${pendingAssessmentCount} student${pendingAssessmentCount!==1?'s':''} yet to complete an assessment`, sub:'Assessment Results', page:'reports'}] : []),
+  ];
+
+  return `
+  <div class="dash-hero">
+    <div class="dash-hero-left">
+      <span class="eyebrow"><span class="ring-dot"></span>${esc(COLLEGE_PROFILE.academicYear || 'ACADEMIC YEAR')}</span>
+      <h1>Welcome back${CURRENT_USER.name?', '+esc(CURRENT_USER.name.split(' ')[0]):''} 👋</h1>
+      <p>${esc(COLLEGE_PROFILE.name || 'Your college')} is trending toward <b style="color:#fff;">${pct(st.ready, st.total)}% overall placement readiness</b> this cycle.</p>
+      <div class="dash-hero-cta">
+        <button class="btn btn-primary" data-action="nav" data-page="reports">${ic('fileText','icon-sm')}View Reports</button>
+      </div>
+    </div>
+    <div class="dash-hero-illustration">${heroIllustrationSVG()}</div>
+  </div>
+
+  <div class="kpi-strip">${STRIP_KPIS.map(kpiStripItem).join('')}</div>
+
+  <div class="grid grid-12">
+    <div class="card span-8">
+      <div class="section-head" style="margin-bottom:10px;"><h2 style="font-size:16px;">Placement Readiness Trend</h2><span class="eyebrow"><span class="ring-dot"></span>Live</span></div>
+      ${lineChartSVG([{values:TREND.final, color:'var(--blue)'},{values:TREND.mid,color:'var(--cyan)'}], MONTHS)}
+    </div>
+    <div class="card span-4">
+      <div class="section-head" style="margin-bottom:10px;"><h2 style="font-size:16px;">Cohort Distribution</h2></div>
+      ${donutSVG([{value:st.ready,color:'var(--ready)'},{value:st.near,color:'var(--warn)'},{value:st.risk,color:'var(--risk)'}],170,26,st.total,'STUDENTS')}
+    </div>
+    <div class="card span-6">
+      <div class="section-head" style="margin-bottom:10px;"><h2 style="font-size:16px;">Department-wise Student Distribution</h2></div>
+      ${barChartSVG(DEPARTMENTS.map(d=>({label:d.name.split(' ')[0], value:d.students})), 560, 220, 'var(--violet)')}
+    </div>
+    <div class="card span-6">
+      <div class="section-head" style="margin-bottom:10px;"><h2 style="font-size:16px;">Assessment Completion Trend</h2></div>
+      ${barChartSVG(ASSESSMENTS.map(a=>({label:a.type, value:a.completion, suffix:'%'})), 560, 220, 'var(--cyan)')}
+    </div>
+  </div>
+
+  <div class="grid grid-12">
+    <div class="card span-8">
+      <div class="toolbar" style="margin-bottom:4px;">
+        <h2 style="font-size:16px;">Institution Performance</h2>
+        <select class="filter-select"><option>All Departments</option>${DEPARTMENTS.map(d=>`<option>${d.name}</option>`).join('')}</select>
+      </div>
+      <div class="table-wrap">
+        <table class="dt">
+          <thead><tr>
+            <th class="sortable" data-action="sort-dash-table" data-field="name">Department</th>
+            <th class="sortable" data-action="sort-dash-table" data-field="students">Students</th>
+            <th class="sortable" data-action="sort-dash-table" data-field="placement">Placement Ready %</th>
+            <th class="sortable" data-action="sort-dash-table" data-field="avgScore">Completion %</th>
+            <th class="sortable" data-action="sort-dash-table" data-field="intervention">Intervention %</th>
+            <th>Risk Level</th>
+          </tr></thead>
+          <tbody>
+            ${sortedDeptTable().length ? sortedDeptTable().map(d=>`<tr class="row-clickable" data-action="view-department" data-id="${d.id}">
+              <td class="cell-name">${d.name}</td><td>${d.students}</td><td>${d.placement}%</td><td>${d.avgScore}%</td><td>${d.intervention}%</td>
+              <td>${statusChip(riskLevel(d)==='risk'?'risk':riskLevel(d)==='near'?'near':'ready')}</td>
+            </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state">${ic('layers','icon-lg')}<h3>No departments yet</h3><p>Create a department to see performance data here.</p></div></td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card span-4" style="display:flex;flex-direction:column;gap:18px;">
+      <div>
+        <div class="section-head" style="margin-bottom:8px;"><h2 style="font-size:15px;">Action Required</h2></div>
+        ${ACTIONS_REQUIRED.length ? ACTIONS_REQUIRED.map(a=>`<div class="action-item ${a.urgent?'urgent':''}" data-action="nav" data-page="${a.page}" style="cursor:pointer;">
+          <div class="a-ic">${ic(a.icon,'icon icon-sm')}</div>
+          <div><div style="font-size:12.5px;font-weight:600;">${a.text}</div><div class="cell-sub">${a.sub}</div></div>
+        </div>`).join('') : `<p class="cell-sub">No pending actions.</p>`}
+      </div>
+      <div>
+        <div class="section-head" style="margin-bottom:8px;"><h2 style="font-size:15px;">Recent Activities</h2><a href="#" data-action="nav" data-page="audit" class="btn-xs btn btn-ghost">View all</a></div>
+        <div class="timeline">${AUDIT_LOGS.length ? AUDIT_LOGS.slice(0,5).map(a=>`
+          <div class="tl-item"><div class="tl-dot"></div><div class="tl-time">${a.time}</div><div style="font-size:12.5px;"><b>${a.user}</b> · ${a.action}</div></div>`).join('') : `<p class="cell-sub">No recent activity.</p>`}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:16px;margin-bottom:14px;">Quick Actions</h2>
+    <div class="qa-strip">
+      <div class="qa-item" data-action="nav" data-page="students"><div class="qa-ic">${ic('users')}</div><span>View Students</span></div>
+      <div class="qa-item" data-action="nav" data-page="interventions"><div class="qa-ic">${ic('calendar')}</div><span>View Interventions</span></div>
+      <div class="qa-item" data-action="nav" data-page="reports"><div class="qa-ic">${ic('fileText')}</div><span>Generate Reports</span></div>
+      <div class="qa-item" data-action="nav" data-page="analytics"><div class="qa-ic">${ic('activity')}</div><span>View Analytics</span></div>
+      <div class="qa-item" data-action="nav" data-page="departments"><div class="qa-ic">${ic('layers')}</div><span>Manage Departments</span></div>
+    </div>
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: STUDENTS
+============================================================ */
+function studentSubnav(active){
+  const tabs = [ ['list','Student List'], ['inactive','Inactive Students'], ['analytics','Student Analytics'] ];
+  return `<div class="subnav">${tabs.map(([k,l])=>`<button class="${active===k?'active':''}" data-action="set-tab" data-group="students" data-value="${k}">${l}</button>`).join('')}</div>`;
+}
+function filteredStudents(includeInactive){
+  const f = STATE.filters.students;
+  return STUDENTS.filter(s=>{
+    if(!includeInactive && s.inactive) return false;
+    if(includeInactive && !s.inactive) return false;
+    if(f.dept!=='all' && s.dept!==f.dept) return false;
+    if(f.year!=='all' && s.year!==f.year) return false;
+    if(f.section!=='all' && s.section!==f.section) return false;
+    if(f.status!=='all' && s.status!==f.status) return false;
+    if(f.q && !(s.name.toLowerCase().includes(f.q.toLowerCase()) || s.reg.toLowerCase().includes(f.q.toLowerCase()))) return false;
+    return true;
+  });
+}
+function pageStudents(){
+  const tab = STATE.tab.students;
+  loadStudents();
+  return `
+  <div class="section-head">
+    <div><h2>Student Management</h2><p>View student records, assessments, and cohort placement for every department.</p></div>
+    <div class="head-actions">
+      <button class="btn btn-ghost btn-sm" data-action="export" data-what="students-excel">${ic('download','icon icon-sm')}Export Excel</button>
+      <button class="btn btn-ghost btn-sm" data-action="export" data-what="students-pdf">${ic('download','icon icon-sm')}Export PDF</button>
+    </div>
+  </div>
+  ${studentSubnav(tab)}
+  <div>${ tab==='list'?studentListView(false) : tab==='inactive'?studentListView(true) : studentAnalytics() }</div>
+  `;
+}
+function studentListView(inactive){
+  const list = filteredStudents(inactive);
+  const f = STATE.filters.students;
+  const depts = [...new Set(STUDENTS.map(s=>s.dept))];
+  const page = STATE.page_num.students||1; const pageSize=8;
+  const totalPages = Math.max(1, Math.ceil(list.length/pageSize));
+  const shown = list.slice((page-1)*pageSize, page*pageSize);
+  return `
+  <div class="card" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box" style="width:240px;"><span>${ic('search','icon icon-sm')}</span><input type="text" placeholder="Search name or reg. no." value="${esc(f.q)}" data-action="filter-students" data-field="q"></div>
+        <select class="filter-select" data-action="filter-students" data-field="dept">
+          <option value="all">All Departments</option>${depts.map(d=>`<option value="${esc(d)}" ${f.dept===d?'selected':''}>${d}</option>`).join('')}
+        </select>
+        <select class="filter-select" data-action="filter-students" data-field="year">
+          <option value="all">All Years</option>${['1st Year','2nd Year','3rd Year','4th Year'].map(y=>`<option ${f.year===y?'selected':''}>${y}</option>`).join('')}
+        </select>
+        <select class="filter-select" data-action="filter-students" data-field="section">
+          <option value="all">All Sections</option>${['A','B','C'].map(y=>`<option ${f.section===y?'selected':''}>${y}</option>`).join('')}
+        </select>
+        <select class="filter-select" data-action="filter-students" data-field="status">
+          <option value="all">All Cohorts</option>
+          <option value="A" ${f.status==='A'?'selected':''}>Cohort A · Placement Ready</option>
+          <option value="B" ${f.status==='B'?'selected':''}>Cohort B · Near Ready</option>
+          <option value="C" ${f.status==='C'?'selected':''}>Cohort C · High Risk</option>
+          <option value="entry_level" ${f.status==='entry_level'?'selected':''}>Entry Level</option>
+        </select>
+      </div>
+      <span class="cell-sub">${list.length} student${list.length!==1?'s':''} found</span>
+    </div>
+    <div class="table-wrap">
+      <table class="dt">
+        <thead><tr><th>Student</th><th>Department</th><th>Year / Sec</th><th>Email</th><th>Assessment</th><th>Readiness</th><th>Actions</th></tr></thead>
+        <tbody>
+        ${shown.length? shown.map(s=>`
+          <tr class="row-clickable" data-action="nav" data-page="student-profile" data-id="${s.id}">
+            <td><div style="display:flex;align-items:center;gap:10px;">${avatarChip(s.name,30)}<div><div class="cell-name">${esc(s.name)}</div><div class="cell-sub">${s.reg}</div></div></div></td>
+            <td>${s.dept}</td><td>${s.year} · ${s.section}</td><td class="cell-sub">${s.email}</td>
+            <td>${statusChip(s.assessmentStatus==='completed'?'completed':s.assessmentStatus==='overdue'?'expired':'scheduled')}</td>
+            <td>${statusChip(s.status)}</td>
+            <td onclick="event.stopPropagation()"><div class="row-actions">
+              <button class="btn-icon" data-action="nav" data-page="student-profile" data-id="${s.id}" title="View">${ic('eye','icon icon-sm')}</button>
+            </div></td>
+          </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state">${ic('users','icon-lg')}<h3>No students found</h3><p>Try adjusting your filters or search terms.</p></div></td></tr>`}
+        </tbody>
+      </table>
+      ${list.length?`<div class="pagination">
+        <span>Page ${page} of ${totalPages}</span>
+        ${Array.from({length:totalPages},(_,i)=>`<button class="page-btn ${page===i+1?'active':''}" data-action="students-page" data-value="${i+1}">${i+1}</button>`).join('')}
+      </div>`:''}
+    </div>
+  </div>`;
+}
+function studentAnalytics(){
+  return `<div class="grid grid-12">
+    <div class="card span-4"><h3 style="font-size:15px;margin-bottom:10px;">Readiness Split</h3>${donutSVG([
+      {value:STUDENTS.filter(s=>s.status==='A').length,color:'var(--ready)'},
+      {value:STUDENTS.filter(s=>s.status==='B').length,color:'var(--warn, var(--violet))'},
+      {value:STUDENTS.filter(s=>s.status==='C').length,color:'var(--risk)'},
+      {value:STUDENTS.filter(s=>s.status==='entry_level').length,color:'var(--text-faint, #9a8f80)'},
+    ],170,24,STUDENTS.length,'STUDENTS')}</div>
+    <div class="card span-8"><h3 style="font-size:15px;margin-bottom:10px;">Average Score by Department</h3>${barChartSVG(DEPARTMENTS.map(d=>({label:d.name.split(' ')[0],value:d.avgScore})))}</div>
+    <div class="card span-12"><h3 style="font-size:15px;margin-bottom:10px;">Performance Radar</h3>${radarSVG(rosterPerfEntries().map(p=>({label:p.label, value:p.value})),300)}</div>
+  </div>`;
+}
+
+/* ---------------- Student Profile (tabs) ---------------- */
+function pageStudentProfile(id){
+  const s = STUDENTS.find(x=>x.id===id);
+  if(!s){
+    return `<a href="#" class="back-link" data-action="nav" data-page="students">${ic('chevLeft','icon icon-sm')}Back to Student Management</a>
+    <div class="card"><div class="empty-state">${ic('users','icon-lg')}<h3>Student not found</h3><p>This student record is not available.</p></div></div>`;
+  }
+  const tab = STATE.params.tab || 'basic';
+  const tabs = [['basic','Basic Details'],['assessments','Assessments'],['cohort','Cohort'],['interventions','Interventions'],['reports','Reports'],['attendance','Attendance'],['timeline','Activity Timeline']];
+  return `
+  <a href="#" class="back-link" data-action="nav" data-page="students">${ic('chevLeft','icon icon-sm')}Back to Student Management</a>
+  <div class="card" style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+    ${avatarChip(s.name,64)}
+    <div style="flex:1;min-width:200px;"><h2 style="font-size:19px;">${esc(s.name)}</h2><p class="cell-sub">${s.reg} · ${s.dept} · ${s.year} · Section ${s.section}</p>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">${statusChip(s.status)}<span class="chip chip-neutral">Overall ${s.overall}</span><span class="chip chip-neutral">${s.cohort}</span></div>
+    </div>
+    <div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" data-action="export" data-what="student-report">${ic('download','icon icon-sm')}Export Report</button></div>
+  </div>
+  <div class="tabbar">${tabs.map(([k,l])=>`<button class="tab-btn ${tab===k?'active':''}" data-action="student-profile-tab" data-id="${s.id}" data-value="${k}">${l}</button>`).join('')}</div>
+  <div>${studentProfileTabContent(s,tab)}</div>
+  `;
+}
+function studentProfileTabContent(s, tab){
+  if(tab==='basic') return `<div class="grid grid-2">
+    <div class="card"><h3 style="font-size:15px;margin-bottom:12px;">Contact Information</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;">
+        <div><span class="cell-sub">Email</span><br>${s.email}</div>
+        <div><span class="cell-sub">Phone</span><br>${s.phone}</div>
+        <div><span class="cell-sub">Department</span><br>${s.dept}</div>
+        <div><span class="cell-sub">Assigned Trainer</span><br>${s.trainer}</div>
+      </div>
+    </div>
+    <div class="card"><h3 style="font-size:15px;margin-bottom:12px;">Academic Snapshot</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Overall Employability</span><b>${s.overall}%</b></div><div class="pbar"><i style="width:${s.overall}%;"></i></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Baseline Assessment</span><b>${s.baseline!=null?Math.round(s.baseline)+'%':'—'}</b></div><div class="pbar teal"><i style="width:${s.baseline!=null?Math.max(0,Math.min(100,s.baseline)):0}%;"></i></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Interview Score</span><b>${s.interview!=null?Math.round(s.interview)+'%':'—'}</b></div><div class="pbar ready"><i style="width:${s.interview!=null?Math.max(0,Math.min(100,s.interview)):0}%;"></i></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Improvement (Baseline → Final)</span><b>${s.improvement!=null?'+'+s.improvement:'—'}</b></div><div class="pbar ready"><i style="width:${s.improvement!=null?Math.min(100,s.improvement*3):0}%;"></i></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Cohort</span><b>${(COHORT_RULES.find(r=>r.key===s.cohortKey)||{}).label || s.cohort}</b></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Attendance</span><b>${s.attendance}%</b></div><div class="pbar teal"><i style="width:${s.attendance}%;"></i></div>
+          <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--text-soft);"><span>Total <b style="color:var(--ink);">${s.attendanceTotal}</b></span><span>Present <b style="color:var(--ready);">${s.attendancePresent}</b></span><span>Absent <b style="color:var(--risk);">${s.attendanceAbsent}</b></span></div></div>
+      </div>
+    </div>
+  </div>`;
+  if(tab==='assessments'){
+    setTimeout(()=>loadStudentAssessmentSummary(s.id), 0);
+    return `<div class="grid grid-4" id="profileAssessments">${[1,2,3,4].map(()=>`<div class="card"><div class="cell-sub">Loading assessment parameters…</div></div>`).join('')}</div>`;
+  }
+  if(tab==='cohort') return `<div class="card"><h3 style="font-size:15px;margin-bottom:10px;">Cohort Placement</h3>
+    <p style="font-size:13.5px;color:var(--text-soft);margin-bottom:14px;">${esc(s.name)} is currently in <b>${(COHORT_RULES.find(r=>r.key===s.status)||{label:'Near Ready'}).label}</b> — assigned automatically using platform rules. No manual reassignment in MVP.</p>
+    ${COHORT_RULES.map(r=>`<div class="rule-card" style="margin-bottom:8px;${r.key===s.status?'border-color:var(--blue);':''}"><div class="rule-ic" style="background:${r.color}22;color:${r.color};">${ic(r.icon)}</div><div><b style="font-size:13px;">${r.label}</b><div class="cell-sub">${r.rule}</div></div>${r.key===s.status?`<span class="chip chip-ready" style="margin-left:auto;">Current</span>`:''}</div>`).join('')}
+  </div>`;
+  if(tab==='interventions') return `<div class="table-wrap"><table class="dt"><thead><tr><th>Intervention</th><th>Date</th><th>Trainer</th><th>Status</th></tr></thead><tbody>
+    ${SESSIONS.length ? SESSIONS.slice(0,3).map(sc=>`<tr><td class="cell-name">${sc.intervention}</td><td>${sc.date}</td><td>${sc.trainer}</td><td>${statusChip(sc.status)}</td></tr>`).join('') : `<tr><td colspan="4"><div class="empty-state">${ic('puzzle','icon-lg')}<h3>No intervention sessions yet</h3><p>Sessions this student attends will appear here.</p></div></td></tr>`}
+  </tbody></table></div>`;
+  if(tab==='reports'){
+    setTimeout(()=>loadStudentOverallReport(s.id), 0);
+    return `<div class="card"><div class="card-head"><h3 style="font-size:15px;">Overall Report</h3>
+        <button class="btn btn-ghost btn-xs" data-action="export" data-what="overall-pdf">${ic('download','icon-sm')}PDF</button></div>
+      <div class="table-wrap"><table class="dt" id="profileOverallReportTable"><thead><tr><th>Assessment Name</th><th>Quiz Marks</th><th>Interview Marks</th><th>Average Marks</th><th>Final Overall Marks</th></tr></thead>
+      <tbody><tr><td colspan="5"><div class="empty-state">${ic('fileText','icon-lg')}<h3>Loading report…</h3></div></td></tr></tbody></table></div>
+    </div>`;
+  }
+  if(tab==='attendance'){
+    setTimeout(()=>loadStudentAttendance(s.id), 0);
+    return `<div id="profileAttendance"><div class="card"><div class="empty-state">${ic('calendar','icon-lg')}<h3>Loading attendance…</h3></div></div></div>`;
+  }
+  if(tab==='timeline') return `<div class="card"><h3 style="font-size:15px;margin-bottom:12px;">Activity Timeline</h3><div class="timeline">
+    ${(s.activityTimeline&&s.activityTimeline.length) ? s.activityTimeline.map(a=>`<div class="tl-item"><div class="tl-dot"></div><div class="tl-time">${a.time}</div><div style="font-size:13.5px;">${a.text}</div></div>`).join('') : `<p class="cell-sub">No activity recorded yet.</p>`}
+  </div></div>`;
+  return '';
+}
+
+/* ============================================================
+   PAGE: DEPARTMENTS
+============================================================ */
+function pageDepartments(){
+  return `
+  <div class="section-head">
+    <div><h2>Department Management</h2><p>Track performance, placement readiness, and intervention participation by department.</p></div>
+    <div class="head-actions"><button class="btn btn-primary btn-sm" data-action="create-department">${ic('plus','icon icon-sm')}Create Department</button></div>
+  </div>
+  <div class="grid grid-3">
+    ${DEPARTMENTS.length ? DEPARTMENTS.map(d=>`
+      <div class="entity-card" data-action="view-department" data-id="${d.id}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><h3 style="font-size:15.5px;">${d.name}</h3><p class="cell-sub">${d.students} students</p></div>
+          <span class="rank-badge">#${d.rank}</span>
+        </div>
+        <div class="grid grid-2" style="gap:10px;">
+          <div><div class="cell-sub">Placement Ready</div><b style="font-size:15px;">${d.placement}%</b></div>
+          <div><div class="cell-sub">Average Score</div><b style="font-size:15px;">${d.avgScore}%</b></div>
+          <div><div class="cell-sub">High Risk</div><b style="font-size:15px;color:var(--risk);">${d.highRisk}</b></div>
+          <div><div class="cell-sub">Intervention</div><b style="font-size:15px;">${d.intervention}%</b></div>
+        </div>
+        <div class="pbar"><i style="width:${d.avgScore}%;"></i></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()" data-action="edit-department" data-id="${d.id}">${ic('edit','icon-sm')}Edit</button>
+          <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()" data-action="view-department" data-id="${d.id}">${ic('activity','icon-sm')}Analytics</button>
+        </div>
+      </div>`).join('') : `<div class="empty-state" style="grid-column:1/-1;">${ic('layers','icon-lg')}<h3>No departments yet</h3><p>Create a department to start tracking its performance.</p></div>`}
+  </div>
+  <div class="card">
+    <h3 style="font-size:16px;margin-bottom:12px;">Department Ranking</h3>
+    ${barChartSVG(DEPARTMENTS.slice().sort((a,b)=>a.rank-b.rank).map(d=>({label:d.name.split(' ')[0], value:d.avgScore})))}
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: ASSESSMENTS
+============================================================ */
+function assessmentSubnav(active){
+  const tabs=[['all','All Assessments'],['windows','Assessment Windows'],['results','Results'],['questions','Question Configuration'],['history','History']];
+  return `<div class="subnav">${tabs.map(([k,l])=>`<button class="${active===k?'active':''}" data-action="set-tab" data-group="assessments" data-value="${k}">${l}</button>`).join('')}</div>`;
+}
+function pageAssessments(){
+  const tab = STATE.tab.assessments;
+  loadAssessments();
+  return `
+  <div class="section-head">
+    <div><h2>Assessment Management</h2><p>View and analyze Baseline, Mid, and Final assessments assigned to your college.</p></div>
+  </div>
+  ${assessmentSubnav(tab)}
+  ${tab==='all'?assessmentListView():tab==='windows'?assessmentWindowsView():tab==='results'?assessmentResultsView():tab==='questions'?assessmentQuestionsView():assessmentHistoryView()}
+  `;
+}
+function assessmentListView(){
+  if(assessmentsLoading && !assessmentsLoaded){
+    return `<div class="empty-state">${ic('book','icon-lg')}<h3>Loading assessments…</h3></div>`;
+  }
+  return `<div class="grid grid-2">${ASSESSMENTS.length ? ASSESSMENTS.map(a=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><h3 style="font-size:15.5px;">${esc(a.name||'Untitled Assessment')}</h3><p class="cell-sub">Created by ${esc(a.createdBy||'—')} · ${a.totalQuestions||0} questions · ${a.totalMarks||0} marks</p></div>${statusChip(a.status)}</div>
+      <div class="cell-sub" style="margin:8px 0;">${a.scheduledDate?fmtDateTime(a.scheduledDate):'Not scheduled'}${a.endDate?' → '+fmtDateTime(a.endDate):''}</div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>Student Responses</span><b>${a.responseCount||0}</b></div>
+      <div class="row-actions" style="margin-top:12px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-xs" data-action="nav" data-page="assessment-responses" data-id="${a.id}">${ic('eye','icon-sm')}View Responses</button>
+      </div>
+    </div>`).join('') : `<div class="empty-state" style="grid-column:1/-1;">${ic('book','icon-lg')}<h3>No assessments yet</h3><p>Assessments created for this college will appear here.</p></div>`}</div>`;
+}
+function assessmentWindowsView(){
+  return `<div class="grid grid-12">
+    <div class="card span-8">
+      <h3 style="font-size:15px;margin-bottom:12px;">Assessment Windows</h3>
+      <div class="table-wrap"><table class="dt"><thead><tr><th>Assessment</th><th>Status</th><th>Countdown</th><th>Submissions</th><th>Restriction</th></tr></thead><tbody>
+      ${ASSESSMENTS.length ? ASSESSMENTS.map(a=>`<tr><td class="cell-name">${a.name}</td><td>${statusChip(a.status)}</td>
+        <td class="cell-sub">${a.status==='live'?'Closing soon':a.status==='upcoming'?'Not yet open':'—'}</td>
+        <td class="cell-sub">${a.participants} completed / pending ${a.participants!==undefined && a.completion!==undefined ? Math.round(a.participants*(100-a.completion)/100) : 0}</td>
+        <td><span class="chip chip-neutral">${ic('laptop','icon-sm')} Desktop / Laptop only</span></td></tr>`).join('') : `<tr><td colspan="5"><div class="empty-state">${ic('book','icon-lg')}<h3>No assessment windows yet</h3><p>Windows will appear here once assessments are scheduled.</p></div></td></tr>`}
+      </tbody></table></div>
+    </div>
+    <div class="card span-4">
+      <h3 style="font-size:15px;margin-bottom:10px;">Window Controls</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:var(--text-soft);">
+        <div class="checkline"><input type="checkbox" checked disabled> Manual close enabled</div>
+        <div class="checkline"><input type="checkbox" checked disabled> Automatic close on end time</div>
+        <div class="checkline"><input type="checkbox" checked disabled> Desktop/Laptop restriction enforced</div>
+        <div class="checkline"><input type="checkbox" checked disabled> No edits allowed after submission</div>
+        <div class="checkline"><input type="checkbox" checked disabled> Timestamp logging on every action</div>
+      </div>
+    </div>
+  </div>`;
+}
+function assessmentResultsView(){
+  return `<div class="grid grid-12">
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Department-wise Results</h3>${barChartSVG(DEPARTMENTS.map(d=>({label:d.name.split(' ')[0],value:d.avgScore})))}</div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Year-wise Completion</h3>${barChartSVG(['1st Yr','2nd Yr','3rd Yr','4th Yr'].map(label=>({label,value:0})),560,240,'var(--cyan)')}</div>
+    <div class="card span-12">
+      <div class="toolbar"><h3 style="font-size:15px;">Overall Results</h3><div class="head-actions"><button class="btn btn-ghost btn-xs" data-action="export" data-what="results-pdf">${ic('download','icon-sm')}Export PDF</button><button class="btn btn-ghost btn-xs" data-action="export" data-what="results-excel">${ic('download','icon-sm')}Export Excel</button></div></div>
+      <div class="table-wrap"><table class="dt"><thead><tr><th>Student</th><th>Department</th><th>Section</th><th>Score</th><th>Status</th></tr></thead><tbody>
+        ${STUDENTS.length ? STUDENTS.slice(0,8).map(s=>`<tr><td class="cell-name">${s.name}</td><td>${s.dept}</td><td>${s.section}</td><td>${s.overall}%</td><td>${statusChip(s.status)}</td></tr>`).join('') : `<tr><td colspan="5"><div class="empty-state">${ic('users','icon-lg')}<h3>No results yet</h3><p>Student results will appear here once assessments are completed.</p></div></td></tr>`}
+      </tbody></table></div>
+    </div>
+  </div>`;
+}
+function assessmentQuestionsView(){
+  return `<div class="table-wrap"><table class="dt"><thead><tr><th>Question Bank</th><th>Category</th><th>Questions</th><th>Difficulty</th><th>Actions</th></tr></thead><tbody>
+    ${QUESTION_BANKS.length ? QUESTION_BANKS.map(b=>`<tr><td class="cell-name">${b.name}</td><td>${b.category}</td><td>${b.questions}</td><td>${b.difficulty}</td>
+      <td class="row-actions"><button class="btn-icon" data-action="view-bank">${ic('eye','icon-sm')}</button></td></tr>`).join('') : `<tr><td colspan="5"><div class="empty-state">${ic('book','icon-lg')}<h3>No question banks yet</h3><p>Question banks configured for assessments will appear here.</p></div></td></tr>`}
+  </tbody></table></div>`;
+}
+function assessmentHistoryView(){
+  return `<div class="timeline card">${ASSESSMENTS.length ? ASSESSMENTS.map(a=>`<div class="tl-item"><div class="tl-dot"></div><div class="tl-time">${a.end}</div><div style="font-size:13.5px;"><b>${a.name}</b> — ${a.completion}% completion, ${a.participants} participants</div></div>`).join('') : `<div class="empty-state">${ic('book','icon-lg')}<h3>No assessment history yet</h3><p>Past assessment cycles will appear here.</p></div>`}</div>`;
+}
+
+/* ---------------- Assessment Responses (read-only, per assessment) ---------------- */
+function pageAssessmentResponses(id){
+  const assessment = ASSESSMENTS.find(a=>a.id===id);
+  const cached = ASSESSMENT_RESPONSES_CACHE[id];
+  if(!cached) loadAssessmentResponses(id);
+
+  const backLink = `<a href="#" class="back-link" data-action="nav" data-page="assessments">${ic('chevLeft','icon icon-sm')}Back to Assessment Management</a>`;
+
+  if(!cached){
+    return `${backLink}<div class="card"><div class="empty-state">${ic('fileText','icon-lg')}<h3>Loading student responses…</h3></div></div>`;
+  }
+  if(cached.error){
+    return `${backLink}<div class="card"><div class="empty-state">${ic('fileText','icon-lg')}<h3>Could not load responses</h3><p>This assessment may not belong to your college, or you may need to sign in again.</p></div></div>`;
+  }
+
+  const name = assessment ? assessment.name : cached.name;
+  const rows = cached.responses;
+
+  return `
+  ${backLink}
+  <div class="section-head">
+    <div><h2>${esc(name||'Assessment')}</h2><p>Student responses for this assessment, scoped to your college. Read-only.</p></div>
+  </div>
+  <div class="table-wrap"><table class="dt"><thead><tr>
+    <th>Student Name</th><th>Register Number</th><th>Department</th><th>Score</th><th>Percentage</th><th>Submission Status</th><th>Submitted On</th>
+  </tr></thead><tbody>
+    ${rows.length ? rows.map(r=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:10px;">${avatarChip(r.studentName||'—',28)}<div class="cell-name">${esc(r.studentName||'—')}</div></div></td>
+      <td class="cell-sub">${esc(r.registerNumber||'—')}</td>
+      <td class="cell-sub">${esc(r.department||'—')}</td>
+      <td>${r.marksObtained!=null?r.marksObtained:'—'}${r.totalMarks!=null?' / '+r.totalMarks:''}</td>
+      <td>${r.percentage!=null?r.percentage+'%':'—'}</td>
+      <td>${statusChip('completed')}</td>
+      <td class="cell-sub">${fmtDateTime(r.submittedAt)}</td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state">${ic('users','icon-lg')}<h3>No student responses yet</h3><p>Responses will appear here once students submit this assessment.</p></div></td></tr>`}
+  </tbody></table></div>
+  `;
+}
+function notifItem(n){
+  return `<div class="notif-item ${n.unread?'unread':''}" data-action="mark-notif-read" data-id="${n.id}">
+    <div class="notif-ic">${ic(n.icon,'icon icon-sm')}</div>
+    <div style="flex:1;min-width:0;"><b style="font-size:13px;">${esc(n.title)}</b><p style="font-size:12px;color:var(--text-soft);margin-top:2px;">${esc(n.desc)}</p><span class="cell-sub">${n.time}</span></div>
+  </div>`;
+}
+function assessmentScoreCard(s,c){
+  const val = s[c.key] || s.overall;
+  const label = val>=80?'Excellent':val>=65?'Good':val>=50?'Average':'Weak';
+  const color = val>=80?'var(--ready)':val>=65?'var(--cyan)':val>=50?'var(--warn)':'var(--risk)';
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;"><b style="font-size:13px;">${c.label}</b><span class="chip" style="background:${color}22;color:${color};">${label}</span></div>
+    <div style="font-family:var(--font-display);font-size:24px;font-weight:700;margin:10px 0 4px;">${val}<span style="font-size:13px;color:var(--text-faint);font-weight:600;">/100</span></div>
+    <div class="pbar" style="margin-bottom:8px;"><i style="width:${val}%;background:${color};"></i></div>
+    <div class="cell-sub">Last updated ${esc(s.lastActivity||'—')}</div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: COHORT MANAGEMENT  (highest priority module)
+============================================================ */
+function cohortSubnav(active){
+  const tabs=[['overview','Overview'],['A','Cohort A · Ready'],['B','Cohort B · Near Ready'],['C','Cohort C · High Risk'],['entry_level','Entry Level'],['analytics','Analytics'],['mapping','Intervention Mapping'],['distribution','Student Distribution']];
+  return `<div class="subnav">${tabs.map(([k,l])=>`<button class="${active===k?'active':''}" data-action="set-tab" data-group="cohorts" data-value="${k}">${l}</button>`).join('')}</div>`;
+}
+function pageCohorts(){
+  const tab = STATE.tab.cohorts;
+  loadStudents();
+  const view = tab==='overview'?cohortOverview()
+    : tab==='analytics'?cohortAnalytics()
+    : tab==='mapping'?cohortInterventionMapping()
+    : tab==='distribution'?cohortDistribution()
+    : cohortDetail(tab);
+  return `
+  <div class="section-head">
+    <div><h2>Cohort Management</h2><p>The heart of the platform — students are placed automatically using rule-based thresholds across every assessment cycle.</p></div>
+    <div class="head-actions"><button class="btn btn-ghost btn-sm" data-action="export" data-what="cohorts-excel">${ic('download','icon-sm')}Export</button></div>
+  </div>
+  ${cohortSubnav(tab)}
+  ${view}
+  `;
+}
+function cohortOverview(){
+  const counts = COHORT_RULES.map(r=>({...r, n: cohortStudents(r.key).length}));
+  return `
+  <div class="grid grid-4">
+    ${counts.map(c=>`<div class="kpi-card" style="cursor:pointer;" data-action="set-tab" data-group="cohorts" data-value="${c.key}">
+      <div class="kpi-top"><div class="kpi-ic" style="background:${c.color}22;color:${c.color};">${ic(c.icon)}</div></div>
+      <div class="kpi-value">${c.n}</div><div class="kpi-label">${c.label}</div>
+      <div class="pbar"><i style="width:${pct(c.n, STUDENTS.length)}%;background:${c.color};"></i></div>
+    </div>`).join('')}
+  </div>
+  <div class="grid grid-12">
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Cohort Distribution</h3>${donutSVG(counts.map(c=>({value:c.n,color:c.color})),190,28,STUDENTS.length,'STUDENTS')}
+      <div style="display:flex;justify-content:center;gap:14px;margin-top:10px;font-size:11.5px;flex-wrap:wrap;">${counts.map(c=>`<span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.color};margin-right:5px;"></i>${c.label}</span>`).join('')}</div>
+    </div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Improvement Trend by Cohort</h3>${lineChartSVG([
+      {values:[], color:'var(--risk)'},{values:[], color:'var(--cyan)'},{values:[], color:'var(--violet)'},{values:[], color:'var(--ready)'}
+    ], MONTHS)}
+      <div style="display:flex;gap:12px;font-size:11px;margin-top:6px;flex-wrap:wrap;">
+        <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--risk);margin-right:5px;"></i>High Risk</span>
+        <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cyan);margin-right:5px;"></i>Comm. Deficit</span>
+        <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--violet);margin-right:5px;"></i>Interview Deficit</span>
+        <span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ready);margin-right:5px;"></i>Placement Ready</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:12px;">Automatic Assignment Rules</h3>
+    <p class="cell-sub" style="margin-bottom:14px;">Students move between cohorts automatically as new assessment scores come in. There is no manual reassignment in the MVP.</p>
+    <div class="grid grid-2">${COHORT_RULES.map(r=>`<div class="rule-card"><div class="rule-ic" style="background:${r.color}22;color:${r.color};">${ic(r.icon)}</div><div><b style="font-size:13.5px;">${r.label}</b><div class="cell-sub">${r.rule}</div></div></div>`).join('')}</div>
+  </div>
+  `;
+}
+function cohortDetail(key){
+  const rule = COHORT_RULES.find(r=>r.key===key) || COHORT_RULES[0];
+  const list = cohortStudents(key);
+  return `
+  <div class="card" style="display:flex;align-items:center;gap:14px;">
+    <div class="rule-ic" style="width:48px;height:48px;background:${rule.color}22;color:${rule.color};">${ic(rule.icon,'icon-lg')}</div>
+    <div><h3 style="font-size:16px;">${rule.label} — ${list.length} students</h3><p class="cell-sub">Rule: ${rule.rule}</p></div>
+  </div>
+  <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box" style="width:220px;"><span>${ic('search','icon-sm')}</span><input type="text" placeholder="Search students…" data-action="filter-students" data-field="q"></div>
+        <select class="filter-select" data-action="filter-students" data-field="dept"><option value="all">All Departments</option>${DEPARTMENTS.map(d=>`<option>${d.name}</option>`).join('')}</select>
+      </div>
+      <button class="btn btn-ghost btn-xs" data-action="export" data-what="cohort-list">${ic('download','icon-sm')}Export</button>
+    </div>
+    <div class="table-wrap"><table class="dt"><thead><tr><th>Student</th><th>Dept.</th><th>Score</th><th>Trainer</th><th>Attendance</th><th>Improvement</th><th>Progress</th></tr></thead><tbody>
+      ${list.length?list.map(s=>`<tr class="row-clickable" data-action="nav" data-page="student-profile" data-id="${s.id}">
+        <td><div style="display:flex;align-items:center;gap:10px;">${avatarChip(s.name,28)}<div class="cell-name">${s.name}</div></div></td>
+        <td class="cell-sub">${s.dept}</td><td>${s.overall}%</td><td class="cell-sub">${s.trainer}</td><td>${s.attendance}%</td><td style="color:var(--ready);font-weight:700;">${s.improvement!=null?'+'+s.improvement:'—'}</td>
+        <td style="min-width:110px;"><div class="pbar"><i style="width:${s.overall}%;background:${rule.color};"></i></div></td>
+      </tr>`).join(''):`<tr><td colspan="7"><div class="empty-state">${ic('target','icon-lg')}<h3>No students in this cohort</h3><p>Students will appear automatically once assessment scores match this rule.</p></div></td></tr>`}
+    </tbody></table></div>
+  </div>
+  `;
+}
+function cohortAnalytics(){
+  const depts = [...new Set(STUDENTS.map(s=>s.dept))].sort();
+  const matrix = depts.map(d => COHORT_RULES.map(r => STUDENTS.filter(s=>s.dept===d && s.status===r.key).length));
+  return `<div class="grid grid-12">
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Department-wise Cohort Distribution</h3>${
+      depts.length ? heatmapSVG(depts, COHORT_RULES.map(r=>r.label.split(' · ')[0]), matrix)
+      : `<div class="empty-state">${ic('target','icon-lg')}<h3>No students yet</h3></div>`
+    }</div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Gender Distribution</h3>${donutSVG([{value:0,color:'var(--blue)'},{value:0,color:'var(--violet)'}],170,24,'','STUDENTS')}
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:10px;font-size:12px;"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:5px;"></i>Male 0%</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--violet);margin-right:5px;"></i>Female 0%</span></div>
+    </div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Year Distribution</h3>${barChartSVG(['1st Yr','2nd Yr','3rd Yr','4th Yr'].map(label=>({label,value:0})))}</div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Overall Improvement Trend</h3>${lineChartSVG([{values:TREND.baseline,color:'var(--blue)'},{values:TREND.mid,color:'var(--cyan)'},{values:TREND.final,color:'var(--violet)'}], MONTHS)}</div>
+  </div>`;
+}
+function cohortInterventionMapping(){
+  const recs = {
+    A:'Advanced Mock Interviews, Recruiter Panels',
+    B:'Mock Interview Series, Aptitude Sprint',
+    C:'Aptitude Sprint, Coding Practice Lab, Resume Workshop',
+    entry_level:'Baseline Assessment, Orientation',
+  };
+  return `<div class="table-wrap"><table class="dt"><thead><tr><th>Cohort</th><th>Recommended Interventions</th><th>Students</th><th>Share</th></tr></thead><tbody>
+    ${COHORT_RULES.map(r=>{
+      const n = cohortStudents(r.key).length;
+      const share = pct(n, STUDENTS.length);
+      return `<tr><td class="cell-name">${r.label}</td><td class="cell-sub">${recs[r.key]}</td><td>${n}</td><td style="min-width:120px;"><div class="pbar"><i style="width:${share}%;background:${r.color};"></i></div></td></tr>`;
+    }).join('')}
+  </tbody></table></div>`;
+}
+function cohortDistribution(){
+  // Live, computed straight from the currently-loaded STUDENTS array — no
+  // fabricated department formula. Recomputed every render, so it can
+  // never show a department/cohort breakdown that predates the latest
+  // Placement Rules recalculation.
+  const depts = [...new Set(STUDENTS.map(s=>s.dept))].sort();
+  const matrix = depts.map(d => COHORT_RULES.map(r => STUDENTS.filter(s=>s.dept===d && s.status===r.key).length));
+  return `<div class="grid grid-12">
+    <div class="card span-12"><h3 style="font-size:15px;margin-bottom:10px;">Students per Department per Cohort</h3>${
+      depts.length ? heatmapSVG(depts, COHORT_RULES.map(r=>r.label.split(' · ')[0]), matrix)
+      : `<div class="empty-state">${ic('target','icon-lg')}<h3>No students yet</h3><p>Cohort distribution will appear once students are registered for this college.</p></div>`
+    }</div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: INTERVENTION MANAGEMENT
+============================================================ */
+function interventionSubnav(active){
+  const tabs=[['library','Intervention Library'],['scheduled','Scheduled Sessions'],['completed','Completed Sessions'],['attendance','Attendance'],['effectiveness','Effectiveness']];
+  return `<div class="subnav">${tabs.map(([k,l])=>`<button class="${active===k?'active':''}" data-action="set-tab" data-group="interventions" data-value="${k}">${l}</button>`).join('')}</div>`;
+}
+function pageInterventions(){
+  const tab = STATE.tab.interventions;
+  return `
+  <div class="section-head">
+    <div><h2>Intervention Management</h2><p>View intervention sessions from the shared library and track attendance and effectiveness. Session scheduling is managed by Super Admin.</p></div>
+  </div>
+  ${interventionSubnav(tab)}
+  ${tab==='library'?interventionLibraryView():tab==='scheduled'?sessionListView('scheduled'):tab==='completed'?sessionListView('completed'):tab==='attendance'?interventionAttendanceView():interventionEffectivenessView()}
+  `;
+}
+function interventionLibraryView(){
+  return `<div class="grid grid-3">${INTERVENTIONS.length ? INTERVENTIONS.map(i=>`
+    <div class="entity-card" data-action="view-intervention" data-id="${i.id}">
+      <div style="display:flex;justify-content:space-between;"><span class="chip chip-info">${i.category}</span><span class="chip chip-neutral">${i.sessions} sessions</span></div>
+      <h3 style="font-size:15px;">${i.name}</h3><p class="cell-sub">${i.description}</p>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;"><span>Effectiveness</span><b>${i.effectiveness}%</b></div>
+      <div class="pbar"><i style="width:${i.effectiveness}%;"></i></div>
+      <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation()" data-action="view-intervention" data-id="${i.id}">${ic('eye','icon-sm')}View Details</button>
+    </div>`).join('') : `<div class="empty-state" style="grid-column:1/-1;">${ic('puzzle','icon-lg')}<h3>No interventions yet</h3><p>Interventions from the shared library will appear here.</p></div>`}</div>`;
+}
+function sessionListView(status){
+  const list = SESSIONS.filter(s=>s.status===status);
+  return `<div class="table-wrap"><table class="dt"><thead><tr><th>Intervention</th><th>Cohort</th><th>Trainer</th><th>Department</th><th>Venue</th><th>Date / Time</th><th>${status==='scheduled'?'Capacity':'Attendance'}</th><th>Actions</th></tr></thead><tbody>
+    ${list.length?list.map(s=>`<tr class="row-clickable" data-action="view-session" data-id="${s.id}">
+      <td class="cell-name">${s.intervention}</td><td class="cell-sub">${s.cohort}</td><td>${s.trainer}</td><td class="cell-sub">${s.dept}</td><td class="cell-sub">${s.venue}</td><td class="cell-sub">${s.date} · ${s.time}</td>
+      <td>${status==='scheduled'?`${s.enrolled}/${s.capacity} enrolled`:`${statusChip('present')} ${s.present} · ${statusChip('absent')} ${s.absent}`}</td>
+      <td onclick="event.stopPropagation()"><button class="btn-icon" data-action="view-session" data-id="${s.id}">${ic('eye','icon-sm')}</button></td>
+    </tr>`).join(''):`<tr><td colspan="8"><div class="empty-state">${ic('calendar','icon-lg')}<h3>No ${status} sessions</h3><p>Schedule a session from the intervention library to see it here.</p></div></td></tr>`}
+  </tbody></table></div>`;
+}
+function interventionAttendanceView(){
+  const completed = SESSIONS.filter(s=>s.status==='completed');
+  const totalPresent = completed.reduce((a,s)=>a+s.present,0), totalAbsent = completed.reduce((a,s)=>a+s.absent,0);
+  const attendedPct = (totalPresent+totalAbsent) ? Math.round(totalPresent/(totalPresent+totalAbsent)*100) : 0;
+  return `<div class="grid grid-12">
+    <div class="card span-4">${donutSVG([{value:totalPresent,color:'var(--ready)'},{value:totalAbsent,color:'var(--risk)'}],170,24,attendedPct+'%','ATTENDED')}</div>
+    <div class="card span-8"><h3 style="font-size:15px;margin-bottom:10px;">Session Attendance</h3>${completed.length?barChartSVG(completed.map(s=>({label:s.intervention.split(' ')[0], value:(s.present+s.absent)?Math.round(s.present/(s.present+s.absent)*100):0, suffix:'%', color:'var(--cyan)'}))):`<div class="empty-state">${ic('calendar','icon-lg')}<h3>No completed sessions yet</h3><p>Attendance will appear here once sessions are completed.</p></div>`}</div>
+  </div>`;
+}
+function interventionEffectivenessView(){
+  const hasData = INTERVENTIONS.length>0;
+  const best = hasData ? INTERVENTIONS.reduce((a,b)=>a.effectiveness>b.effectiveness?a:b) : null;
+  const least = hasData ? INTERVENTIONS.reduce((a,b)=>a.effectiveness<b.effectiveness?a:b) : null;
+  const avgImprovement = hasData ? Math.round(INTERVENTIONS.reduce((a,i)=>a+i.avgImprovement,0)/INTERVENTIONS.length) : 0;
+  return `<div class="grid grid-12">
+    <div class="card span-4"><div class="kpi-label">Participation Rate</div><div class="kpi-value">—</div><div class="pbar"><i style="width:0%;"></i></div></div>
+    <div class="card span-4"><div class="kpi-label">Average Improvement</div><div class="kpi-value">${hasData?'+'+avgImprovement:'—'}</div><div class="cell-sub">score points per intervention cycle</div></div>
+    <div class="card span-4"><div class="kpi-label">Best / Least Performing</div><p style="font-size:13px;margin-top:6px;">${hasData?`<b style="color:var(--ready);">${best.name}</b> (${best.effectiveness}%)<br><b style="color:var(--risk);">${least.name}</b> (${least.effectiveness}%)`:'<span class="cell-sub">No intervention data yet.</span>'}</p></div>
+    <div class="card span-12"><h3 style="font-size:15px;margin-bottom:10px;">Effectiveness Trend</h3>${lineChartSVG([{values:[],color:'var(--blue)'},{values:[],color:'var(--ready)'}], MONTHS)}</div>
+  </div>`;
+}
+/* ============================================================
+   PAGE: REPORTS
+============================================================ */
+const REPORT_TYPES = [
+  {key:'overall', label:'Overall Report', icon:'fileText', desc:'Every assessment attempt in your college — Assessment Name, Quiz Marks, Interview Marks, Average Marks and Final Overall Marks, computed live from the database.'},
+];
+function pageReports(){
+  loadOverallReport();
+  return `
+  <div class="section-head"><div><h2>Overall Report</h2><p>Every assessment attempt across your college — Assessment Name, Quiz Marks, Interview Marks, Average Marks and Final Overall Marks, all fetched live from the database.</p></div>
+    <div class="head-actions">
+      <button class="btn btn-ghost btn-sm" data-action="reload-report">${ic('refresh','icon icon-sm')}Refresh</button>
+      <button class="btn btn-ghost btn-sm" data-action="export" data-what="overall-pdf">${ic('download','icon icon-sm')}PDF</button>
+      <button class="btn btn-ghost btn-sm" data-action="export" data-what="overall-excel">${ic('download','icon icon-sm')}Excel</button>
+      <button class="btn btn-ghost btn-sm" data-action="print-report" data-id="overall">${ic('fileText','icon icon-sm')}Print</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select class="filter-select" id="overallDeptFilter" data-action="report-filter"><option value="">All Departments</option></select>
+        <select class="filter-select" id="overallStudentFilter" data-action="report-filter"><option value="">All Students</option></select>
+      </div>
+    </div>
+    <div id="overallReportWrap"><div class="empty-state">${ic('fileText','icon-lg')}<h3>Loading overall report…</h3></div></div>
+  </div>
+  `;
+}
+
+/* ---------------- Overall Report (single live report) ---------------- */
+let OVERALL_REPORT = null;        // full, unfiltered rows from the backend
+let OVERALL_REPORT_LOADING = false;
+function overallReportRows(){
+  if(!OVERALL_REPORT || !OVERALL_REPORT.length) return [];
+  const dept = document.getElementById('overallDeptFilter')?.value || '';
+  const stu = document.getElementById('overallStudentFilter')?.value || '';
+  return OVERALL_REPORT.filter(r => (!dept || (r.department||'')===dept) && (!stu || r.studentId===stu));
+}
+function fmtScore(v, digits=2){
+  if(v === null || v === undefined || v === '') return '—';
+  const n = Number(v);
+  return isNaN(n) ? '—' : n.toFixed(digits);
+}
+async function loadOverallReport(force=false){
+  if(OVERALL_REPORT_LOADING) return;
+  if(!force && OVERALL_REPORT) { renderOverallReport(); return; }
+  OVERALL_REPORT_LOADING = true;
+  const wrap = document.getElementById('overallReportWrap');
+  if(wrap) wrap.innerHTML = `<div class="empty-state">${ic('fileText','icon-lg')}<h3>Loading overall report…</h3></div>`;
+  const { ok, data } = await collegeAdminApi('/reports/overall');
+  OVERALL_REPORT_LOADING = false;
+  OVERALL_REPORT = (ok && Array.isArray(data.report)) ? data.report : [];
+  populateOverallFilters();
+  renderOverallReport();
+}
+function populateOverallFilters(){
+  const deptSel = document.getElementById('overallDeptFilter');
+  const stuSel = document.getElementById('overallStudentFilter');
+  if(!deptSel || !stuSel) return;
+  const depts = [...new Set((OVERALL_REPORT||[]).map(r=>r.department).filter(Boolean))].sort();
+  deptSel.innerHTML = '<option value="">All Departments</option>' + depts.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  const students = [...new Map((OVERALL_REPORT||[]).filter(r=>r.studentId).map(r=>[r.studentId, r])).values()].sort((a,b)=>(a.studentName||'').localeCompare(b.studentName||''));
+  stuSel.innerHTML = '<option value="">All Students</option>' + students.map(r=>`<option value="${esc(r.studentId)}">${esc(r.studentName||'Unknown')}</option>`).join('');
+}
+function renderOverallReport(){
+  const wrap = document.getElementById('overallReportWrap');
+  if(!wrap) return;
+  const rows = overallReportRows();
+  if(!rows.length){
+    wrap.innerHTML = `<div class="empty-state">${ic('fileText','icon-lg')}<h3>No assessment attempts yet</h3><p>Submitted quiz results for your college will appear here once students complete assessments.</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="table-wrap"><table class="dt"><thead><tr><th>Student</th><th>Reg No</th><th>Department</th><th>Assessment Name</th><th>Quiz Marks</th><th>Interview Marks</th><th>Average Marks</th><th>Final Overall Marks</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="cell-name">${esc(r.studentName||'—')}</td>
+      <td class="cell-sub">${esc(r.rollNumber||'—')}</td>
+      <td class="cell-sub">${esc(r.department||'—')}</td>
+      <td>${esc(r.assessmentName||'—')}</td>
+      <td><b>${fmtScore(r.quizMarks)}%</b></td>
+      <td><b>${fmtScore(r.interviewMarks)}%</b></td>
+      <td><b>${fmtScore(r.averageMarks)}%</b></td>
+      <td><span class="chip chip-ready">${fmtScore(r.finalOverallMarks)}%</span></td>
+    </tr>`).join('')}</tbody></table></div>
+    <p class="cell-sub" style="margin-top:12px;">${rows.length} assessment attempt${rows.length===1?'':'s'} · refreshed live from the database.</p>`;
+}
+async function loadStudentOverallReport(studentId){
+  const tbody = document.querySelector('#profileOverallReportTable tbody');
+  if(!tbody) return;
+  const { ok, data } = await collegeAdminApi(`/reports/overall?studentId=${encodeURIComponent(studentId)}`);
+  const rows = (ok && Array.isArray(data.report)) ? data.report : [];
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">${ic('fileText','icon-lg')}<h3>No assessment attempts yet</h3><p>Submitted quiz results for this student will appear here once assessments are completed.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>`<tr>
+    <td>${esc(r.assessmentName||'—')}</td>
+    <td><b>${fmtScore(r.quizMarks)}%</b></td>
+    <td><b>${fmtScore(r.interviewMarks)}%</b></td>
+    <td><b>${fmtScore(r.averageMarks)}%</b></td>
+    <td><span class="chip chip-ready">${fmtScore(r.finalOverallMarks)}%</span></td>
+  </tr>`).join('');
+}
+
+/* ============================================================
+   PAGE: ATTENDANCE (college-wide) — live from db.attendance,
+   scoped to this admin's college. Marked exclusively by the Super
+   Admin; this page only reads. Every field re-fetches on load, so
+   attendance the Super Admin just marked shows up the moment the
+   admin opens or refreshes this page — no separate sync step.
+============================================================ */
+let ATTENDANCE_STATE = { department:'', date:'' };
+function pageAttendance(){
+  loadAttendanceOverview();
+  loadAttendanceDepartments();
+  loadAttendanceDates();
+  return `
+  <div class="section-head"><div><h2>Attendance</h2><p>Live class-wise attendance for your college, marked by the Super Admin.</p></div>
+    <div class="head-actions">
+      <button class="btn btn-ghost btn-sm" data-action="reload-attendance">${ic('refresh','icon icon-sm')}Refresh</button>
+    </div>
+  </div>
+  <div class="grid grid-4" id="attendanceOverviewCards">
+    <div class="kpi-card"><div class="kpi-label">Total Classes Marked</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Present</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Absent</div><div class="kpi-value">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Overall Attendance</div><div class="kpi-value">—</div></div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="card-head"><h3 style="font-size:15px;">This Month</h3></div>
+    <div id="attendanceThisMonth"><p class="cell-sub">Loading…</p></div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select class="filter-select" id="attDeptFilter" data-action="attendance-filter"><option value="">All Departments</option></select>
+        <select class="filter-select" id="attDateFilter" data-action="attendance-filter"><option value="">Select a class date…</option></select>
+      </div>
+    </div>
+    <div id="attendanceRecordsWrap"><div class="empty-state">${ic('calendar','icon-lg')}<h3>Pick a class date</h3><p>Choose a date above to see who was present or absent that day.</p></div></div>
+  </div>
+  `;
+}
+async function loadAttendanceOverview(){
+  const el = document.getElementById('attendanceOverviewCards');
+  const tmEl = document.getElementById('attendanceThisMonth');
+  const params = ATTENDANCE_STATE.department ? `?department=${encodeURIComponent(ATTENDANCE_STATE.department)}` : '';
+  const { ok, data } = await collegeAdminApi(`/attendance/overview${params}`);
+  const o = (ok && data.overview) ? data.overview : {};
+  if(el){
+    const total = o.total ?? 0, present = o.present ?? 0, absent = o.absent ?? 0;
+    const pct = total ? Math.round((present/total)*100) : 0;
+    el.innerHTML = `
+      <div class="kpi-card"><div class="kpi-label">Total Classes Marked</div><div class="kpi-value">${total}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Present</div><div class="kpi-value" style="color:var(--ready);">${present}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Absent</div><div class="kpi-value" style="color:var(--risk);">${absent}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Overall Attendance</div><div class="kpi-value">${total?pct+'%':'—'}</div></div>`;
+  }
+  if(tmEl){
+    const tm = o.thisMonth || {};
+    tmEl.innerHTML = tm.total
+      ? `<div style="display:flex;gap:26px;flex-wrap:wrap;">
+          <div><div class="cell-sub">Classes This Month</div><b style="font-size:18px;">${tm.total}</b></div>
+          <div><div class="cell-sub">Present</div><b style="font-size:18px;color:var(--ready);">${tm.present}</b></div>
+          <div><div class="cell-sub">Absent</div><b style="font-size:18px;color:var(--risk);">${tm.absent}</b></div>
+          <div><div class="cell-sub">Attendance %</div><b style="font-size:18px;">${Math.round(tm.percentage||0)}%</b></div>
+        </div>`
+      : `<p class="cell-sub">No classes marked yet this month.</p>`;
+  }
+}
+async function loadAttendanceDepartments(){
+  const sel = document.getElementById('attDeptFilter');
+  if(!sel) return;
+  const { ok, data } = await collegeAdminApi('/attendance/departments');
+  const depts = (ok && Array.isArray(data.departments)) ? data.departments : [];
+  const current = ATTENDANCE_STATE.department;
+  sel.innerHTML = '<option value="">All Departments</option>' + depts.map(d=>`<option value="${esc(d)}" ${d===current?'selected':''}>${esc(d)}</option>`).join('');
+}
+async function loadAttendanceDates(){
+  const sel = document.getElementById('attDateFilter');
+  if(!sel) return;
+  const params = ATTENDANCE_STATE.department ? `?department=${encodeURIComponent(ATTENDANCE_STATE.department)}` : '';
+  const { ok, data } = await collegeAdminApi(`/attendance/dates${params}`);
+  const dates = (ok && Array.isArray(data.dates)) ? data.dates : [];
+  if(!ATTENDANCE_STATE.date && dates.length) ATTENDANCE_STATE.date = dates[0].date;
+  const current = ATTENDANCE_STATE.date;
+  sel.innerHTML = '<option value="">Select a class date…</option>' + dates.map(d=>`<option value="${esc(d.date)}" ${d.date===current?'selected':''}>${fmtDate(d.date)||d.date} — ${d.present} present · ${d.absent} absent</option>`).join('');
+  if(current) loadAttendanceRecords();
+  else { const wrap = document.getElementById('attendanceRecordsWrap'); if(wrap) wrap.innerHTML = `<div class="empty-state">${ic('calendar','icon-lg')}<h3>No classes marked yet</h3><p>Attendance marked by the Super Admin will appear here.</p></div>`; }
+}
+async function loadAttendanceRecords(){
+  const wrap = document.getElementById('attendanceRecordsWrap');
+  if(!wrap) return;
+  if(!ATTENDANCE_STATE.date){ wrap.innerHTML = `<div class="empty-state">${ic('calendar','icon-lg')}<h3>Pick a class date</h3><p>Choose a date above to see who was present or absent that day.</p></div>`; return; }
+  wrap.innerHTML = `<div class="empty-state">${ic('calendar','icon-lg')}<h3>Loading records…</h3></div>`;
+  const params = new URLSearchParams({ date: ATTENDANCE_STATE.date });
+  if(ATTENDANCE_STATE.department) params.set('department', ATTENDANCE_STATE.department);
+  const { ok, data } = await collegeAdminApi(`/attendance/records?${params.toString()}`);
+  const rows = (ok && Array.isArray(data.records)) ? data.records : [];
+  if(!rows.length){
+    wrap.innerHTML = `<div class="empty-state">${ic('users','icon-lg')}<h3>No students found</h3><p>Try a different department filter.</p></div>`;
+    return;
+  }
+  const statusChipFor = st => st==='present' ? statusChip('present') : st==='absent' ? statusChip('absent') : `<span class="chip">Not Marked</span>`;
+  wrap.innerHTML = `<div class="table-wrap"><table class="dt"><thead><tr><th>Student</th><th>Reg No</th><th>Department</th><th>Cohort</th><th>Status</th><th>Marked By</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td class="cell-name">${esc(r.studentName||'—')}</td>
+      <td class="cell-sub">${esc(r.rollNumber||'—')}</td>
+      <td class="cell-sub">${esc(r.department||'—')}</td>
+      <td class="cell-sub">${esc(r.cohort||'—')}</td>
+      <td>${statusChipFor(r.status)}</td>
+      <td class="cell-sub">${esc(r.markedBy||'—')}</td>
+    </tr>`).join('')}</tbody></table></div>
+    <p class="cell-sub" style="margin-top:12px;">${data.present||0} present · ${data.absent||0} absent · ${data.notMarked||0} not marked · refreshed live from the database.</p>`;
+}
+function onAttendanceFilterChange(el){
+  if(el.id==='attDeptFilter'){ ATTENDANCE_STATE.department = el.value; ATTENDANCE_STATE.date = ''; loadAttendanceOverview(); loadAttendanceDates(); }
+  else if(el.id==='attDateFilter'){ ATTENDANCE_STATE.date = el.value; loadAttendanceRecords(); }
+}
+
+/* ---------------- Student profile: attendance (live from backend) ---------------- */
+async function loadStudentAttendance(studentId){
+  const root = document.getElementById('profileAttendance');
+  if(!root) return;
+  const { ok, data } = await collegeAdminApi(`/students/${encodeURIComponent(studentId)}/attendance`);
+  const att = (ok && data.attendance) ? data.attendance : {};
+  const total = att.total ?? 0, present = att.present ?? 0, absent = att.absent ?? 0;
+  const pct = total ? Math.round((present/total)*100) : 0;
+  const tm = att.thisMonth || {};
+  const history = att.history || [];
+  const rows = history.slice(0, 12);
+  root.innerHTML = `
+    <div class="card"><h3 style="font-size:15px;margin-bottom:12px;">Attendance Overview</h3>
+      <div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap;">
+        ${donutSVG([{value:total?present:0,color:'var(--ready)'},{value:total?absent:0,color:'var(--risk)'}],160,22,total?pct+'%':'0','ATTENDED')}
+        <div style="display:flex;flex-direction:column;gap:12px;flex:1;min-width:220px;">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding-bottom:8px;font-size:13.5px;"><span class="cell-sub">Total Classes</span><b>${total}</b></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding-bottom:8px;font-size:13.5px;"><span class="cell-sub">Present</span><b style="color:var(--ready);">${present}</b></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding-bottom:8px;font-size:13.5px;"><span class="cell-sub">Absent</span><b style="color:var(--risk);">${absent}</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13.5px;"><span class="cell-sub">This Month (${tm.month||'—'})</span><b>${tm.total??0} · ${(tm.total||0)?Math.round(tm.percentage||0)+'%':'—'}</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;"><h3 style="font-size:15px;margin-bottom:12px;">Attendance History</h3>
+      ${rows.length ? `<div class="table-wrap"><table class="dt"><thead><tr><th>Date</th><th>Status</th><th>Marked By</th></tr></thead><tbody>
+        ${rows.map(h=>`<tr><td>${fmtDateTime(h.date)||h.date||'—'}</td><td>${h.status==='present'?statusChip('present'):statusChip('absent')}</td><td class="cell-sub">${esc(h.markedBy||'—')}</td></tr>`).join('')}
+      </tbody></table></div>` : `<div class="empty-state">${ic('calendar','icon-lg')}<h3>No attendance records yet</h3><p>Classes marked by the Super Admin will appear here.</p></div>`}
+    </div>`;
+}
+
+/* ---------------- Student profile: assessment parameters (six live values) ---------------- */
+const STUDENT_ASSESSMENT_CACHE = {};
+async function loadStudentAssessmentSummary(studentId, force=false){
+  if(!force && STUDENT_ASSESSMENT_CACHE[studentId]){
+    renderStudentAssessmentSummary(STUDENT_ASSESSMENT_CACHE[studentId]);
+    return;
+  }
+  const { ok, data } = await collegeAdminApi(`/students/${encodeURIComponent(studentId)}/assessment-summary`);
+  const res = (ok && data) ? data : { error:true };
+  if(!res.error) STUDENT_ASSESSMENT_CACHE[studentId] = res;
+  renderStudentAssessmentSummary(res);
+}
+function assessmentParamCard(label, score, attempts, tone='teal'){
+  const colorMap = { teal:'var(--ready)', amber:'var(--warn)', rose:'var(--risk)' };
+  const hasScore = typeof score === 'number';
+  const pctVal = hasScore ? Math.max(0, Math.min(100, score)) : 0;
+  const labelText = !hasScore ? 'No data' : (score>=80?'Excellent':score>=65?'Good':score>=50?'Average':'Weak');
+  const color = hasScore ? (score>=80?colorMap.teal:score>=50?colorMap.amber:colorMap.rose) : colorMap.teal;
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;"><b style="font-size:13px;">${esc(label)}</b><span class="chip" style="background:${color}22;color:${color};">${hasScore?labelText:'—'}</span></div>
+    <div style="font-family:var(--font-display);font-size:24px;font-weight:700;margin:10px 0 4px;">${hasScore?Math.round(score):'—'}<span style="font-size:13px;color:var(--text-faint);font-weight:600;">/100</span></div>
+    <div class="pbar" style="margin-bottom:8px;"><i style="width:${pctVal}%;background:${color};"></i></div>
+    <div class="cell-sub">${hasScore?`${attempts} attempt${attempts===1?'':'s'}`:'Not assessed yet'}</div>
+  </div>`;
+}
+function renderStudentAssessmentSummary(res){
+  const el = document.getElementById('profileAssessments');
+  if(!el) return;
+  if(res.error){
+    el.innerHTML = `<div class="card" style="grid-column:1/-1;"><div class="empty-state">${ic('fileText','icon-lg')}<h3>Could not load assessment summary</h3><p>Please try again.</p></div></div>`;
+    return;
+  }
+  const cards = (res.sections||[]).map(sec=>assessmentParamCard(sec.name, sec.score, sec.attempts));
+  const manual = res.manualInterview || {};
+  cards.push(assessmentParamCard('Manual Interview', manual.score, manual.attempts));
+  el.innerHTML = cards.length ? cards.join('') : `<div class="card" style="grid-column:1/-1;"><div class="empty-state">${ic('fileText','icon-lg')}<h3>No assessment data yet</h3><p>Submitted quiz results will appear here.</p></div></div>`;
+}
+
+/* ============================================================
+   PAGE: ANALYTICS
+============================================================ */
+function rosterPerfEntries(){
+  const avgNum = f => {
+    const vals = STUDENTS.map(s=>s[f]).filter(v=>typeof v==='number' && !isNaN(v));
+    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+  };
+  return [
+    {label:'Overall Employability', value:avgNum('overall')},
+    {label:'Baseline Assessment', value:avgNum('baseline')},
+    {label:'Interview Score', value:avgNum('interview')},
+    {label:'Attendance', value:avgNum('attendance')},
+  ];
+}
+function pageAnalytics(){
+  loadStudents();
+  // Performance averages come straight from the /api/collegeadmin/students
+  // roster fields (finalEmployabilityScore / baselineAssessmentScore /
+  // interviewScore / attendancePct) — the same single source the Student
+  // Profile and College Admin KPIs use, so Analytics can never disagree.
+  const perf = rosterPerfEntries();
+  const perfOf = label => (perf.find(p=>p.label===label)||{}).value || 0;
+  return `
+  <div class="section-head"><div><h2>Analytics</h2><p>Performance across employability, assessments, interview, attendance and departments.</p></div></div>
+  <div class="grid grid-4">
+    ${perf.map(p=>`<div class="kpi-card"><div class="kpi-label">${p.label}</div><div class="kpi-value">${p.value}%</div><div class="pbar"><i style="width:${p.value}%;"></i></div></div>`).join('')}
+  </div>
+  <div class="grid grid-12">
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Performance Radar</h3>${radarSVG(perf.map(p=>({label:p.label, value:p.value})),300)}</div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Department Ranking</h3>
+      ${DEPARTMENTS.length ? DEPARTMENTS.slice().sort((a,b)=>a.rank-b.rank).map(d=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);"><span class="rank-badge">#${d.rank}</span><span style="flex:1;font-size:13.5px;font-weight:600;">${d.name}</span><b>${d.avgScore}%</b></div>`).join('') : `<p class="cell-sub">No departments yet.</p>`}
+    </div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Assessment Completion</h3>${barChartSVG(ASSESSMENTS.map(a=>({label:a.type,value:a.completion,suffix:'%'})))}</div>
+    <div class="card span-6"><h3 style="font-size:15px;margin-bottom:10px;">Intervention Success</h3>${barChartSVG(INTERVENTIONS.map(i=>({label:i.name.split(' ')[0],value:i.effectiveness,suffix:'%',color:'var(--cyan)'})))}</div>
+    <div class="card span-12"><h3 style="font-size:15px;margin-bottom:10px;">Improvement Trend</h3>${lineChartSVG([{values:TREND.baseline,color:'var(--blue)'},{values:TREND.mid,color:'var(--cyan)'},{values:TREND.final,color:'var(--violet)'}], MONTHS)}</div>
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: NOTIFICATIONS
+============================================================ */
+function pageNotifications(){
+  return `
+  <div class="section-head">
+    <div><h2>Notifications</h2><p>${UNREAD_NOTIFS()} unread notification${UNREAD_NOTIFS()!==1?'s':''}.</p></div>
+    <div class="head-actions"><button class="btn btn-ghost btn-sm" data-action="mark-all-read">${ic('check','icon-sm')}Mark all as read</button></div>
+  </div>
+  <div class="card">${NOTIFICATIONS.length ? NOTIFICATIONS.map(notifItem).join('') : `<div class="empty-state">${ic('bell','icon-lg')}<h3>No notifications yet</h3><p>You're all caught up.</p></div>`}</div>
+  `;
+}
+
+/* ============================================================
+   PAGE: AUDIT LOGS
+============================================================ */
+function pageAudit(){
+  return `
+  <div class="section-head">
+    <div><h2>Audit Logs</h2><p>Every meaningful action taken across the platform, timestamped and attributable.</p></div>
+    <div class="head-actions"><button class="btn btn-ghost btn-sm" data-action="export" data-what="audit-logs">${ic('download','icon-sm')}Export</button></div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box" style="width:240px;"><span>${ic('search','icon-sm')}</span><input type="text" placeholder="Search action or user…"></div>
+        <select class="filter-select"><option>All Actions</option><option>Student</option><option>Assessment</option><option>Trainer</option><option>Intervention</option><option>Report</option></select>
+        <input type="date" class="filter-input">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap"><table class="dt"><thead><tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>IP Address</th></tr></thead><tbody>
+      ${AUDIT_LOGS.length ? AUDIT_LOGS.map(a=>`<tr><td class="cell-sub">${a.time}</td><td class="cell-name">${a.user}</td><td>${a.role}</td><td>${a.action}</td><td class="cell-sub">${a.ip}</td></tr>`).join('') : `<tr><td colspan="5"><div class="empty-state">${ic('fileText','icon-lg')}<h3>No audit activity yet</h3><p>Actions taken across the platform will be logged here.</p></div></td></tr>`}
+    </tbody></table></div>
+  </div>
+  `;
+}
+
+/* ============================================================
+   PAGE: PROFILE & SETTINGS
+============================================================ */
+function pageProfile(){
+  return `
+  <div class="section-head"><div><h2>Profile & Settings</h2><p>Manage your college information, account, and platform preferences.</p></div></div>
+  <div class="grid grid-12">
+    <div class="card span-4" style="text-align:center;">
+      ${avatarChip(CURRENT_USER.name || 'User', 84)}
+      <h3 style="margin-top:12px;">${esc(CURRENT_USER.name || '—')}</h3><p class="cell-sub">${esc(CURRENT_USER.role || '—')} · ${esc(COLLEGE_PROFILE.name || '—')}</p>
+      <button class="btn btn-ghost btn-sm" style="margin-top:12px;">${ic('edit','icon-sm')}Edit Profile Photo</button>
+    </div>
+    <div class="card span-8">
+      <h3 style="font-size:15px;margin-bottom:14px;">College Information</h3>
+      <div class="form-grid">
+        <div class="field"><label>College Name</label><input type="text" value="${esc(COLLEGE_PROFILE.name)}" placeholder="Enter college name"></div>
+        <div class="field"><label>Admin Email</label><input type="email" value="${esc(COLLEGE_PROFILE.email)}" placeholder="admin@college.edu"></div>
+        <div class="field"><label>Phone</label><input type="tel" value="${esc(COLLEGE_PROFILE.phone)}" placeholder="+91 00000 00000"></div>
+        <div class="field"><label>Founded</label><input type="text" value="${esc(COLLEGE_PROFILE.founded)}" placeholder="e.g. 1985"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;"><button class="btn btn-primary btn-sm" data-action="save-profile">${ic('check','icon-sm')}Save Changes</button></div>
+    </div>
+    <div class="card span-6">
+      <h3 style="font-size:15px;margin-bottom:14px;">Security</h3>
+      <div class="field" style="margin-bottom:12px;"><label>Current Password</label><input type="password" placeholder="••••••••"></div>
+      <div class="field" style="margin-bottom:12px;"><label>New Password</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn btn-ghost btn-sm" data-action="change-password">${ic('key','icon-sm')}Update Password</button>
+      <div style="margin-top:16px;"><h4 style="font-size:13px;margin-bottom:8px;">Active Sessions</h4>
+        ${ACTIVE_SESSIONS.length ? ACTIVE_SESSIONS.map(sess=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;"><span>${esc(sess.device)}</span>${sess.current?'<span class="chip chip-ready">Active</span>':`<button class="btn btn-ghost btn-xs" data-action="revoke-session" data-id="${sess.id}">Revoke</button>`}</div>`).join('') : `<p class="cell-sub">No session data available yet.</p>`}
+      </div>
+    </div>
+    <div class="card span-6">
+      <h3 style="font-size:15px;margin-bottom:14px;">Notification Preferences</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${['New trainer registrations','Assessment window closing soon','Intervention reminders','Weekly reports ready'].map(l=>`<div class="checkline"><input type="checkbox" checked> ${l}</div>`).join('')}
+      </div>
+      <h3 style="font-size:15px;margin:18px 0 10px;">Theme</h3>
+      <div style="display:flex;gap:10px;"><button class="btn btn-ghost btn-sm" data-action="toggle-theme">${ic('sun','icon-sm')}Light / Dark</button></div>
+    </div>
+  </div>
+  `;
+}
+
+/* ============================================================
+   MODAL BUILDERS for quick actions
+============================================================ */
+function openSessionModal(id){
+  const s = SESSIONS.find(x=>x.id===id); if(!s) return;
+  openModal(`${modalHeader(s.intervention, s.cohort)}
+    <div class="modal-body">
+      <div class="grid grid-2">
+        <div><div class="cell-sub">Trainer</div><b>${s.trainer}</b></div>
+        <div><div class="cell-sub">Department</div><b>${s.dept}</b></div>
+        <div><div class="cell-sub">Venue</div><b>${s.venue}</b></div>
+        <div><div class="cell-sub">Date / Time</div><b>${s.date} · ${s.time}</b></div>
+        <div><div class="cell-sub">Status</div><b>${statusChip(s.status)}</b></div>
+        <div><div class="cell-sub">${s.status==='scheduled'?'Capacity':'Attendance'}</div><b>${s.status==='scheduled'?`${s.enrolled}/${s.capacity} enrolled`:`${s.present} present · ${s.absent} absent`}</b></div>
+      </div>
+      <div class="field"><label>Notes / Feedback</label><textarea rows="3" placeholder="Session notes and trainer feedback…"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Close</button><button class="btn btn-primary" data-action="close-modal">${ic('check','icon-sm')}Save Notes</button></div>`);
+}
+function openInterventionModal(id){
+  const i = INTERVENTIONS.find(x=>x.id===id); if(!i) return;
+  openModal(`${modalHeader(i.name, i.category)}
+    <div class="modal-body">
+      <p style="font-size:13.5px;color:var(--text-soft);">${i.description}</p>
+      <div class="grid grid-3">
+        <div><div class="cell-sub">Effectiveness</div><b>${i.effectiveness}%</b></div>
+        <div><div class="cell-sub">Sessions Run</div><b>${i.sessions}</b></div>
+        <div><div class="cell-sub">Avg Improvement</div><b>+${i.avgImprovement}</b></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Close</button></div>`);
+}
+function openDepartmentModal(id){
+  const d = DEPARTMENTS.find(x=>x.id===id); if(!d) return;
+  openModal(`${modalHeader(d.name, `Rank #${d.rank} · ${d.students} students`)}
+    <div class="modal-body">
+      <div class="grid grid-2">
+        <div><div class="cell-sub">Placement Ready</div><b>${d.placement}%</b></div>
+        <div><div class="cell-sub">Average Score</div><b>${d.avgScore}%</b></div>
+        <div><div class="cell-sub">High Risk</div><b style="color:var(--risk);">${d.highRisk}</b></div>
+        <div><div class="cell-sub">Intervention Participation</div><b>${d.intervention}%</b></div>
+      </div>
+      ${barChartSVG([{label:'Placement',value:d.placement},{label:'Avg Score',value:d.avgScore},{label:'Intervention',value:d.intervention}])}
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Close</button></div>`, 'modal-lg');
+}
+function openDepartmentFormModal(id){
+  const d = id ? DEPARTMENTS.find(x=>x.id===id) : null;
+  openModal(`${modalHeader(d?'Edit Department':'Create Department', d?d.name:'Add a new department to the college')}
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field full"><label>Department Name <span class="req">*</span></label><input type="text" id="deptName" value="${d?esc(d.name):''}" placeholder="e.g. Computer Science & Engineering"></div>
+        <div class="field"><label>Department Code <span class="req">*</span></label><input type="text" id="deptCode" value="${d?esc(d.code||''):''}" placeholder="e.g. CSE"></div>
+        <div class="field"><label>Status</label><select id="deptStatus"><option ${((d?d.status:'active')==='active')?'selected':''}>Active</option><option ${(d&&d.status==='inactive')?'selected':''}>Inactive</option></select></div>
+        <div class="field full"><label>Department Head (optional)</label><input type="text" id="deptHead" value="${d?esc(d.head||''):''}" placeholder="e.g. Dr. Anitha Krishnan"></div>
+        <div class="field full"><label>Description</label><textarea id="deptDesc" rows="3" placeholder="Brief description of the department…">${d?esc(d.description||''):''}</textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-primary" data-action="save-department" data-id="${d?d.id:''}">${ic('check','icon-sm')}Save</button></div>`);
+}
+function openReportPreview(key){
+  const r = REPORT_TYPES.find(x=>x.key===key) || {label:'Report'};
+  const data = buildReportData(key);
+  openModal(`${modalHeader(r.label+' — Preview', 'Generated '+nowStamp())}
+    <div class="modal-body">
+      <p style="font-size:13.5px;color:var(--text-soft);">${r.desc||''}</p>
+      ${barChartSVG(DEPARTMENTS.map(d=>({label:d.name.split(' ')[0],value:d.avgScore})))}
+      <div class="table-wrap" style="margin-top:14px;"><table class="dt"><thead><tr>${data.columns.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead>
+      <tbody>${data.rows.slice(0,6).map(row=>`<tr>${row.map(c=>`<td class="cell-sub">${esc(String(c))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-action="close-modal">Close</button>
+      <button class="btn btn-ghost" data-action="print-report" data-id="${key}">${ic('fileText','icon-sm')}Print</button>
+      <button class="btn btn-ghost" data-action="export" data-what="${key}-excel">${ic('download','icon-sm')}Export Excel</button>
+      <button class="btn btn-primary" data-action="export" data-what="${key}-pdf">${ic('download','icon-sm')}Export PDF</button>
+    </div>`, 'modal-lg');
+}
+
+/* ============================================================
+   EXPORT ENGINE — real PDF (jsPDF) + real Excel (SheetJS) files
+============================================================ */
+function studentRow(s){ return { 'Register Number':s.reg, 'Student Name':s.name, 'Department':s.dept, 'Email':s.email, 'Placement Readiness':(COHORT_RULES.find(r=>r.key===s.status)||{label:s.status}).label, 'Assessment Status':s.assessmentStatus }; }
+function downloadExcel(filename, rows, sheetName='Sheet1'){
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, filename);
+}
+function downloadPDFTable(filename, title, columns, rows){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: columns.length>5?'landscape':'portrait' });
+  doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text('ProCapSys', 14, 15);
+  doc.setFontSize(11); doc.setFont('helvetica','normal');
+  doc.text(title, 14, 22);
+  doc.setFontSize(9); doc.setTextColor(120);
+  doc.text('Generated '+new Date().toLocaleString(), 14, 28);
+  doc.autoTable({ startY:33, head:[columns], body:rows, styles:{fontSize:8, cellPadding:3}, headStyles:{ fillColor:[232,114,12] } });
+  doc.save(filename);
+}
+function printTable(title, columns, rows){
+  const win = window.open('', '_blank');
+  win.document.write(`<html><head><title>${esc(title)}</title><style>
+    body{font-family:Arial,sans-serif;padding:24px;color:#1E1A14;} h1{font-size:18px;} p{color:#564B3D;font-size:12px;}
+    table{width:100%;border-collapse:collapse;margin-top:14px;} th,td{border:1px solid #DCD2C0;padding:6px 8px;font-size:12px;text-align:left;}
+    th{background:#F5EEE2;}</style></head><body>
+    <h1>${esc(title)}</h1><p>ProCapSys · Generated ${esc(new Date().toLocaleString())}</p>
+    <table><thead><tr>${columns.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(String(c))}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    </body></html>`);
+  win.document.close(); win.focus();
+  setTimeout(()=>win.print(), 300);
+}
+function studentExportColumns(){ return ['Register No.','Name','Department','Email','Placement Readiness','Assessment Status']; }
+function studentExportRows(list){ return list.map(s=>[s.reg, s.name, s.dept, s.email, (COHORT_RULES.find(r=>r.key===s.status)||{label:s.status}).label, s.assessmentStatus]); }
+
+function buildReportData(key){
+  switch(key){
+    case 'student': return { title:'Student Report', columns: studentExportColumns(), rows: studentExportRows(STUDENTS), sheetRows: STUDENTS.map(studentRow) };
+    case 'department': return { title:'Department Report', columns:['Department','Students','Avg Score %','Placement %','High Risk','Intervention %'], rows: DEPARTMENTS.map(d=>[d.name,d.students,d.avgScore,d.placement,d.highRisk,d.intervention]), sheetRows: DEPARTMENTS.map(d=>({Department:d.name, Students:d.students,'Avg Score %':d.avgScore,'Placement %':d.placement,'High Risk':d.highRisk,'Intervention %':d.intervention})) };
+    case 'assessment': return { title:'Assessment Report', columns:['Assessment','Type','Status','Start','End','Participants','Completion %'], rows: ASSESSMENTS.map(a=>[a.name,a.type,a.status,a.start,a.end,a.participants,a.completion]), sheetRows: ASSESSMENTS.map(a=>({Assessment:a.name, Type:a.type, Status:a.status, Start:a.start, End:a.end, Participants:a.participants, 'Completion %':a.completion})) };
+    case 'intervention': return { title:'Intervention Report', columns:['Intervention','Category','Effectiveness %','Sessions','Avg Improvement'], rows: INTERVENTIONS.map(i=>[i.name,i.category,i.effectiveness,i.sessions,i.avgImprovement]), sheetRows: INTERVENTIONS.map(i=>({Intervention:i.name, Category:i.category, 'Effectiveness %':i.effectiveness, Sessions:i.sessions, 'Avg Improvement':i.avgImprovement})) };
+    case 'placement': return { title:'Placement Readiness Report', columns:['Cohort','Rule','Students'], rows: COHORT_RULES.map(r=>[r.label,r.rule,cohortStudents(r.key).length]), sheetRows: COHORT_RULES.map(r=>({Cohort:r.label, Rule:r.rule, Students:cohortStudents(r.key).length})) };
+    case 'college': { const ds = dashboardStats(); const readyPct = Math.round(ds.ready/ds.total*100); return { title:'College Report', columns:['Metric','Value'], rows:[['Total Students',ds.total],['Average Score',ds.avgScore+'%'],['Placement Ready %',readyPct+'%'],['High Risk Students',ds.risk]], sheetRows:[{Metric:'Total Students',Value:ds.total},{Metric:'Average Score',Value:ds.avgScore+'%'},{Metric:'Placement Ready %',Value:readyPct+'%'},{Metric:'High Risk Students',Value:ds.risk}] }; }
+    case 'overall': {
+      const rows = overallReportRows().map(r=>[
+        r.studentName||'—', r.rollNumber||'—', r.department||'—', r.assessmentName||'—',
+        fmtScore(r.quizMarks)+'%', fmtScore(r.interviewMarks)+'%', fmtScore(r.averageMarks)+'%', fmtScore(r.finalOverallMarks)+'%',
+      ]);
+      return { title:'Overall Report', columns:['Student','Reg No','Department','Assessment Name','Quiz Marks','Interview Marks','Average Marks','Final Overall Marks'], rows, sheetRows: overallReportRows().map(r=>({'Student':r.studentName||'—','Reg No':r.rollNumber||'—','Department':r.department||'—','Assessment Name':r.assessmentName||'—','Quiz Marks %':fmtScore(r.quizMarks),'Interview Marks %':fmtScore(r.interviewMarks),'Average Marks %':fmtScore(r.averageMarks),'Final Overall Marks %':fmtScore(r.finalOverallMarks)})) };
+    }
+    default: return { title:'Report', columns:['Item'], rows:[['No data']], sheetRows:[{Item:'No data'}] };
+  }
+}
+function handleExport(what){
+  const stamp = Date.now();
+  if(what==='students-excel'){ downloadExcel(`students-export-${stamp}.xlsx`, filteredStudents(false).map(studentRow), 'Students'); return; }
+  if(what==='students-pdf'){ downloadPDFTable(`students-export-${stamp}.pdf`, 'Student Report', studentExportColumns(), studentExportRows(filteredStudents(false))); return; }
+  if(what==='sample-template'){ downloadExcel('student-upload-template.xlsx', [{'Register Number':'MIT21CS001','Student Name':'Jane Doe','Department':'Computer Science & Engineering','Year':'3rd Year','Section':'A','Email':'jane.doe@college.edu','Phone':'+91 90000 00000','Cohort':'2026 · Batch A'}], 'Template'); return; }
+  if(what==='results-excel'){ downloadExcel(`assessment-results-${stamp}.xlsx`, STUDENTS.map(s=>({Student:s.name, Department:s.dept, Section:s.section, Score:s.overall, Status:s.status})), 'Results'); return; }
+  if(what==='results-pdf'){ downloadPDFTable(`assessment-results-${stamp}.pdf`, 'Assessment Results', ['Student','Department','Section','Score','Status'], STUDENTS.map(s=>[s.name,s.dept,s.section,s.overall+'%',s.status])); return; }
+  if(what==='audit-logs'){ downloadExcel(`audit-logs-${stamp}.xlsx`, AUDIT_LOGS.map(a=>({Timestamp:a.time, User:a.user, Role:a.role, Action:a.action, 'IP Address':a.ip})), 'Audit Logs'); return; }
+  if(what==='past-report'){ downloadPDFTable(`report-${stamp}.pdf`, 'Report', ['Item'], [['Archived report — regenerate from Reports tab for latest data']]); return; }
+  if(what==='student-report'){
+    const sid = STATE.params && STATE.params.id;
+    if(!sid){ showToast('Select a student first','error'); return; }
+    showToast('Generating student report…','info');
+    collegeAdminApi(`/reports/overall?studentId=${encodeURIComponent(sid)}`).then(({ok,data})=>{
+      const rows = (ok && Array.isArray(data.report)) ? data.report : [];
+      if(!rows.length){ showToast('No assessment attempts yet for this student','error'); return; }
+      const cols = ['Assessment Name','Quiz Marks %','Interview Marks %','Average Marks %','Final Overall Marks %'];
+      const body = rows.map(r=>[r.assessmentName||'—', fmtScore(r.quizMarks), fmtScore(r.interviewMarks), fmtScore(r.averageMarks), fmtScore(r.finalOverallMarks)]);
+      downloadPDFTable(`student-overall-report-${stamp}.pdf`, 'Overall Report', cols, body);
+    });
+    return;
+  }
+  const m = what.match(/^(.*)-(pdf|excel)$/);
+  if(m){
+    const [,key,fmt] = m;
+    const data = buildReportData(key);
+    if(fmt==='pdf') downloadPDFTable(`${key}-report-${stamp}.pdf`, data.title, data.columns, data.rows);
+    else downloadExcel(`${key}-report-${stamp}.xlsx`, data.sheetRows, data.title.slice(0,28));
+    return;
+  }
+  showToast('Preparing '+what.replace(/-/g,' ')+'…','info');
+}
+
+/* ============================================================
+   BULK UPLOAD — real file parsing (CSV/XLSX) via SheetJS
+============================================================ */
+let PENDING_UPLOAD_ROWS = [];
+function triggerFilePicker(){ document.getElementById('bulkFileInput').click(); }
+function handleBulkFile(file){
+  if(!file) return;
+  showToast('Reading file…','info');
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const wb = XLSX.read(e.target.result, { type:'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+      if(!rows.length){ showToast('The file has no rows to import','error'); return; }
+      PENDING_UPLOAD_ROWS = rows;
+      openUploadPreviewModal(rows);
+    }catch(err){ showToast('Could not read file — please use the sample template format','error'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function openUploadPreviewModal(rows){
+  const preview = rows.slice(0,6);
+  const cols = Object.keys(rows[0]);
+  closeModal();
+  openModal(`${modalHeader('Preview Students', `${rows.length} row${rows.length!==1?'s':''} detected — showing first ${preview.length}`)}
+    <div class="modal-body">
+      <div class="table-wrap"><table class="dt"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead>
+      <tbody>${preview.map(r=>`<tr>${cols.map(c=>`<td class="cell-sub">${esc(String(r[c]))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal">Cancel</button><button class="btn btn-primary" data-action="confirm-bulk-import">${ic('upload','icon-sm')}Import ${rows.length} Students</button></div>`, 'modal-lg');
+}
+
+/* ============================================================
+   EVENT DELEGATION
+============================================================ */
+document.addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  if(el.tagName==='A') e.preventDefault();
+  const action = el.dataset.action;
+  const id = el.dataset.id;
+
+  switch(action){
+    case 'nav': {
+      const page = el.dataset.page;
+      const params = {}; if(id) params.id = id;
+      goPage(page, params);
+      break;
+    }
+    case 'toggle-sidebar': {
+      const sidebar = document.getElementById('sidebar');
+      const collapsed = sidebar.classList.toggle('collapsed');
+      el.setAttribute('aria-expanded', collapsed?'false':'true');
+      el.setAttribute('aria-label', collapsed?'Expand navigation menu':'Collapse navigation menu');
+      break;
+    }
+    case 'open-mobile-sidebar': openMobileSidebar(); break;
+    case 'close-mobile-sidebar': closeMobileSidebar(); break;
+    case 'toggle-theme': {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      break;
+    }
+    case 'toggle-notif-panel': {
+      const p = document.getElementById('notifPanel');
+      if(p.innerHTML){ p.innerHTML=''; break; }
+      p.innerHTML = `<div class="card" style="position:absolute;right:0;top:48px;width:340px;max-height:400px;overflow-y:auto;z-index:300;box-shadow:var(--shadow-lg);padding:10px;">
+        ${NOTIFICATIONS.length ? NOTIFICATIONS.slice(0,6).map(notifItem).join('') : `<p class="cell-sub" style="padding:10px;">No notifications yet.</p>`}
+        <div style="text-align:center;padding:8px;"><button class="btn btn-ghost btn-xs" data-action="nav" data-page="notifications">View all notifications</button></div>
+      </div>`;
+      break;
+    }
+    case 'mark-notif-read': {
+      const n = NOTIFICATIONS.find(x=>x.id===id); if(n) n.unread=false;
+      renderPage(); if(document.getElementById('notifPanel')) document.getElementById('notifPanel').innerHTML='';
+      break;
+    }
+    case 'mark-all-read': NOTIFICATIONS.forEach(n=>n.unread=false); renderPage(); showToast('All notifications marked as read'); break;
+    // Bug fix: this previously only closed the modal and showed a
+    // "Logged out successfully" toast — it never called the backend,
+    // never cleared the auth cookie, and never redirected, so the
+    // admin was still fully logged in afterward. Now routed through
+    // the shared EIP.logout(), same as every other role.
+    case 'logout': confirmModal({title:'Log Out', body:'Are you sure you want to log out of the College Admin dashboard?', confirmLabel:'Log Out', confirmClass:'btn-danger', onConfirm:()=>{ closeModal(); window.EIP.logout(); }}); break;
+
+    case 'set-tab': {
+      const group = el.dataset.group, value = el.dataset.value;
+      STATE.tab[group] = value;
+      renderPage();
+      break;
+    }
+    case 'students-page': STATE.page_num.students = Number(el.dataset.value); renderPage(); break;
+    case 'student-profile-tab': goPage('student-profile', {id, tab: el.dataset.value}); break;
+
+    case 'view-session': openSessionModal(id); break;
+    case 'view-intervention': openInterventionModal(id); break;
+    case 'view-department': openDepartmentModal(id); break;
+    case 'edit-department': openDepartmentFormModal(id); break;
+    case 'create-department': openDepartmentFormModal(null); break;
+    case 'save-department': {
+      const name = document.getElementById('deptName')?.value.trim();
+      const code = document.getElementById('deptCode')?.value.trim();
+      const status = document.getElementById('deptStatus')?.value || 'Active';
+      const head = document.getElementById('deptHead')?.value.trim();
+      const description = document.getElementById('deptDesc')?.value.trim();
+      if(!name || !code){ showToast('Please fill in all required fields','error'); break; }
+      const existingId = el.dataset.id;
+      const payload = { name, code, status, head, description };
+      const op = existingId ? api.departments.update(existingId, payload) : api.departments.create(payload);
+      op.then(d=>{
+        closeModal(); renderPage();
+        showToast(`${d.name} ${existingId?'updated':'created'} successfully`);
+        api.audit.log(`${existingId?'Edited':'Created'} department — ${d.name}`);
+        refreshDashboardLive();
+      });
+      break;
+    }
+
+    case 'assessment-action': {
+      const op = el.dataset.op;
+      if(op==='view'){ STATE.tab.assessments='results'; }
+      renderPage();
+      break;
+    }
+    case 'view-bank': showToast('Question bank preview opened','info'); break;
+
+    case 'sort-dash-table': {
+      const field = el.dataset.field;
+      if(DASH_SORT.field===field) DASH_SORT.dir = DASH_SORT.dir==='asc'?'desc':'asc';
+      else { DASH_SORT.field = field; DASH_SORT.dir = 'desc'; }
+      renderPage();
+      break;
+    }
+
+    case 'generate-report': openReportPreview(id); break;
+    case 'preview-report': openReportPreview(id); break;
+    case 'export': {
+      const what = el.dataset.what;
+      showToast(`Generating ${what.replace(/-/g,' ')}…`,'info');
+      setTimeout(()=>{
+        try{
+          handleExport(what);
+          showToast('Download ready');
+          if(!['sample-template'].includes(what)){
+            api.audit.log(`Generated report — ${what.replace(/-/g,' ')}`);
+            if(/-pdf$|-excel$/.test(what) && !['students-pdf','students-excel','results-pdf','results-excel'].includes(what)){
+              api.notifications.push({ type:'report', icon:'fileText', title:'Report ready', desc:`${what.replace(/-(pdf|excel)$/,'').replace(/-/g,' ')} report has finished generating and is ready to download.` });
+            }
+            refreshDashboardLive();
+          }
+        }catch(err){ showToast('Export failed — please try again','error'); }
+      }, 500);
+      break;
+    }
+    case 'print-report': { const data = buildReportData(id); printTable(data.title, data.columns, data.rows); break; }
+    case 'reload-report': loadOverallReport(true); break;
+    case 'report-filter': renderOverallReport(); break;
+    case 'reload-attendance': loadAttendanceOverview(); loadAttendanceDates(); break;
+    case 'attendance-filter': onAttendanceFilterChange(el); break;
+    case 'choose-file': triggerFilePicker(); break;
+    case 'confirm-bulk-import': {
+      const rows = PENDING_UPLOAD_ROWS;
+      closeModal();
+      showToast('Upload in progress…','info');
+      api.students.bulkImport(rows).then(res=>{
+        showToast(`${res.total} records processed — ${res.ok} succeeded, ${res.failed} flagged for review`);
+        api.audit.log(`Uploaded ${res.ok} student records via bulk upload`);
+        api.notifications.push({ type:'upload', icon:'upload', title:'New student upload', desc:`${res.ok} student records were bulk-uploaded.` });
+        STATE.tab.students='list';
+        refreshDashboardLive();
+        renderPage();
+      });
+      PENDING_UPLOAD_ROWS = [];
+      break;
+    }
+
+    case 'save-profile': showToast('Profile updated successfully'); break;
+    case 'change-password': showToast('Password updated successfully'); break;
+    case 'revoke-session': showToast('Session revoked'); break;
+
+    case 'close-modal': closeModal(); break;
+    case 'run-confirm': { const fn = window.__pendingConfirm; if(fn) fn(); break; }
+  }
+}, true); // capture phase: ensures clicks on buttons inside modals (which stopPropagation() on the wrapper to prevent overlay-close) are still caught.
+
+document.addEventListener('input', (e)=>{
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const action = el.dataset.action;
+  if(action==='filter-students'){
+    STATE.filters.students[el.dataset.field] = el.value;
+    STATE.page_num.students = 1;
+    const active = document.activeElement;
+    renderPage();
+    const again = document.querySelector(`[data-action="filter-students"][data-field="${el.dataset.field}"]`);
+    if(again && again.tagName==='INPUT'){ again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+  }
+});
+document.addEventListener('change', (e)=>{
+  const el = e.target.closest('[data-action="filter-students"]');
+  if(el){ STATE.filters.students[el.dataset.field] = el.value; STATE.page_num.students = 1; renderPage(); }
+  if(e.target.id==='bulkFileInput' && e.target.files && e.target.files[0]){ handleBulkFile(e.target.files[0]); }
+  const reportFilterEl = e.target.closest('[data-action="report-filter"]');
+  if(reportFilterEl){ renderOverallReport(); }
+  const attFilterEl = e.target.closest('[data-action="attendance-filter"]');
+  if(attFilterEl){ onAttendanceFilterChange(attFilterEl); }
+});
+document.addEventListener('dragover', (e)=>{ if(e.target.closest('#bulkDropZone')) e.preventDefault(); });
+document.addEventListener('drop', (e)=>{
+  const zone = e.target.closest('#bulkDropZone');
+  if(!zone) return;
+  e.preventDefault();
+  if(e.dataTransfer.files && e.dataTransfer.files[0]) handleBulkFile(e.dataTransfer.files[0]);
+});
+
+/* ============================================================
+   INIT
+============================================================ */
+function init(){
+  buildShell();
+  goPage('dashboard');
+}
+init();
+</script>
+
+</body>
+</html>

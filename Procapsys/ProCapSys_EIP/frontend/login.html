@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — ProCapSys</title>
+<meta name="description" content="Sign in, create an account, or reset your password on ProCapSys.">
+
+<!-- ============================================================
+     FONTS — identical to homepage
+============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   0. DESIGN TOKENS — copied verbatim from the homepage so this
+   page inherits the exact same palette / type / radius / shadow
+   system. Do not fork these values.
+============================================================ */
+:root{
+  --ink:#12203B;
+  --ink-soft:#33436A;
+  --paper:#F6F5F1;
+  --paper-raised:#FFFFFF;
+  --line:#DAD4C6;
+  --amber:#F2A93B;
+  --amber-dark:#C9860F;
+  --teal:#1F9E93;
+  --teal-dark:#146F67;
+  --rose:#E4573D;
+  --text:#171B24;
+  --text-soft:#5B6070;
+  --radius-sm:8px;
+  --radius-md:16px;
+  --radius-lg:28px;
+  --shadow-sm: 0 2px 8px rgba(18,32,59,0.06);
+  --shadow-md: 0 12px 32px rgba(18,32,59,0.10);
+  --shadow-lg: 0 24px 64px rgba(18,32,59,0.16);
+  --font-display:'Fraunces', serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+  --maxw:1280px;
+  --transition: 0.35s cubic-bezier(.22,1,.36,1);
+}
+
+[data-theme="dark"]{
+  --ink:#EDEBE3;
+  --ink-soft:#B9BFCF;
+  --paper:#0D1220;
+  --paper-raised:#161C2E;
+  --line:#2A3352;
+  --text:#EDEBE3;
+  --text-soft:#9BA0B4;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.35);
+  --shadow-md: 0 12px 32px rgba(0,0,0,0.45);
+  --shadow-lg: 0 24px 64px rgba(0,0,0,0.55);
+}
+
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  font-family:var(--font-body);
+  background:var(--paper);
+  color:var(--text);
+  line-height:1.6;
+  transition: background var(--transition), color var(--transition);
+  overflow-x:hidden;
+  min-height:100vh;
+}
+img{ max-width:100%; display:block; }
+a{ color:inherit; text-decoration:none; }
+ul{ list-style:none; }
+button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+input,select,textarea{ font-family:inherit; }
+h1,h2,h3,h4{ font-family:var(--font-display); font-weight:600; line-height:1.1; letter-spacing:-0.01em; }
+.eyebrow{
+  font-family:var(--font-mono); font-size:12px; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--teal-dark); display:inline-flex; align-items:center; gap:8px; margin-bottom:16px; font-weight:600;
+}
+[data-theme="dark"] .eyebrow{ color:var(--teal); }
+.eyebrow::before{ content:''; width:18px; height:1px; background:var(--teal-dark); }
+[data-theme="dark"] .eyebrow::before{ background:var(--teal); }
+
+::selection{ background:var(--amber); color:var(--ink); }
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--teal); outline-offset:3px; border-radius:4px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important; }
+}
+
+/* ============================================================
+   1. LOADER — identical to homepage
+============================================================ */
+#loader{
+  position:fixed; inset:0; background:var(--ink); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+[data-theme="dark"] #loader{ background:var(--paper); }
+#loader.hidden{ opacity:0; visibility:hidden; }
+.loader-mark{
+  width:52px; height:52px; border-radius:50%;
+  border:2px solid rgba(246,245,241,0.2); border-top-color:var(--amber);
+  animation: spin 0.9s linear infinite;
+}
+.loader-text{ font-family:var(--font-mono); font-size:12px; letter-spacing:0.16em; color:#F6F5F1; text-transform:uppercase; }
+[data-theme="dark"] .loader-text{ color:var(--ink); }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* ============================================================
+   2. MINI NAV — brand + back-to-home + theme toggle
+============================================================ */
+.auth-nav{
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:22px 40px;
+}
+.brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:20px; }
+.auth-nav .brand-logo{ height:clamp(64px,10vw,110px); width:auto; display:block; flex:none; object-fit:contain; background:#fff; border:1px solid rgba(30,26,20,0.08); border-radius:14px; padding:12px 18px; box-shadow:0 10px 26px -14px rgba(30,26,20,0.35); }
+.brand-mark{
+  width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg, var(--amber), var(--rose));
+  display:flex; align-items:center; justify-content:center; color:#12203B; font-weight:800; font-size:15px; font-family:var(--font-mono);
+  box-shadow: var(--shadow-sm);
+}
+.theme-toggle{
+  width:38px; height:38px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+  transition: transform var(--transition), background var(--transition);
+  background:var(--paper-raised);
+}
+.theme-toggle:hover{ transform:rotate(20deg); }
+
+/* ============================================================
+   3. PAGE SHELL — split layout
+============================================================ */
+.auth-page{
+  min-height:100vh;
+  display:flex;
+  position:relative;
+  background:var(--paper);
+}
+.auth-side{
+  flex:1 1 46%;
+  position:relative;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:120px 72px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(242,169,59,0.16), transparent 45%),
+    radial-gradient(circle at 88% 80%, rgba(31,158,147,0.16), transparent 45%);
+}
+.auth-side-grid{
+  position:absolute; inset:0; z-index:0; opacity:0.5; pointer-events:none;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 30% 40%, black 10%, transparent 75%);
+}
+.auth-blob{
+  position:absolute; border-radius:50%; filter:blur(70px); z-index:0; pointer-events:none;
+  animation: float-blob 12s ease-in-out infinite;
+}
+.blob-1{ width:380px; height:380px; background:rgba(242,169,59,0.32); top:-100px; right:-80px; }
+.blob-2{ width:300px; height:300px; background:rgba(31,158,147,0.28); bottom:-100px; left:-60px; animation-delay:-4s; }
+@keyframes float-blob{
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%{ transform:translate(30px,-24px) scale(1.08); }
+}
+.auth-side-content{ position:relative; z-index:1; max-width:440px; }
+.auth-side-content .brand{ margin-bottom:44px; }
+.auth-side-content h1{ font-size:clamp(30px,3.4vw,42px); margin-bottom:18px; }
+.auth-side-content h1 em{ font-style:italic; color:var(--teal-dark); }
+[data-theme="dark"] .auth-side-content h1 em{ color:var(--teal); }
+.auth-side-content p{ color:var(--text-soft); font-size:16.5px; margin-bottom:40px; }
+.side-points{ display:flex; flex-direction:column; gap:18px; }
+.side-point{ display:flex; align-items:flex-start; gap:14px; font-size:14.5px; color:var(--text-soft); }
+.side-point-mark{
+  flex-shrink:0; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, rgba(242,169,59,0.22), rgba(228,87,61,0.16)); color:var(--amber-dark); font-family:var(--font-mono); font-size:12px; font-weight:700;
+}
+[data-theme="dark"] .side-point-mark{ color:var(--amber); }
+.side-illustration{
+  position:relative; z-index:1; margin-top:48px; padding:22px; border-radius:var(--radius-lg);
+  background:rgba(255,255,255,0.55); backdrop-filter:blur(16px) saturate(160%); -webkit-backdrop-filter:blur(16px) saturate(160%);
+  border:1px solid var(--line); box-shadow:var(--shadow-md);
+}
+[data-theme="dark"] .side-illustration{ background:rgba(22,28,46,0.55); }
+.side-illustration .bar-row{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.side-illustration .bar-row:last-child{ margin-bottom:0; }
+.side-illustration .label{ width:78px; flex-shrink:0; font-size:12.5px; color:var(--text-soft); }
+.side-illustration .bar-track{ flex:1; height:8px; border-radius:100px; background:var(--line); overflow:hidden; }
+.side-illustration .bar-fill{ height:100%; border-radius:100px; background:linear-gradient(90deg, var(--amber), var(--teal)); transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+
+.auth-main{
+  flex:1 1 54%;
+  display:flex; align-items:center; justify-content:center;
+  padding:200px 40px 60px;
+  position:relative;
+}
+
+/* ============================================================
+   4. AUTH CARD
+============================================================ */
+.auth-card{
+  width:100%; max-width:460px;
+  background:rgba(255,255,255,0.62);
+  backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);
+  padding:44px 40px;
+  position:relative;
+  overflow:hidden;
+}
+[data-theme="dark"] .auth-card{ background:rgba(22,28,46,0.62); }
+.auth-card::before{
+  content:''; position:absolute; top:-60%; right:-30%; width:260px; height:260px; border-radius:50%;
+  background:radial-gradient(circle, rgba(242,169,59,0.18), transparent 70%); pointer-events:none;
+}
+
+.auth-panel{ display:none; }
+.auth-panel.active{ display:block; animation: panel-in 0.5s cubic-bezier(.22,1,.36,1); }
+@keyframes panel-in{
+  from{ opacity:0; transform:translateY(14px) scale(0.98); filter:blur(4px); }
+  to{ opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
+}
+.auth-panel.leaving{ animation: panel-out 0.3s cubic-bezier(.22,1,.36,1); }
+@keyframes panel-out{
+  from{ opacity:1; transform:translateY(0) scale(1); }
+  to{ opacity:0; transform:translateY(-10px) scale(0.98); }
+}
+
+.auth-head{ margin-bottom:30px; }
+.auth-head h2{ font-size:clamp(24px,3vw,30px); margin-bottom:8px; }
+.auth-head p{ color:var(--text-soft); font-size:14.5px; }
+
+/* ============================================================
+   5. FORM FIELDS — floating label pattern
+============================================================ */
+.field{ position:relative; margin-bottom:22px; }
+.field label{
+  position:absolute; left:16px; top:15px; font-size:14.5px; color:var(--text-soft);
+  pointer-events:none; transition: all var(--transition); background:transparent; padding:0 4px;
+}
+.field input,
+.field select{
+  width:100%; padding:16px 16px 6px; font-size:15px; color:var(--text);
+  background:var(--paper-raised); border:1.5px solid var(--line); border-radius:var(--radius-sm);
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  appearance:none; -webkit-appearance:none;
+}
+.field input::placeholder{ color:transparent; }
+.field input:focus,
+.field select:focus{
+  outline:none; border-color:var(--teal); box-shadow:0 0 0 4px rgba(31,158,147,0.14);
+}
+.field input:focus + label,
+.field input:not(:placeholder-shown) + label,
+.field.has-value label{
+  top:6px; font-size:11px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:var(--teal-dark);
+}
+[data-theme="dark"] .field input:focus + label,
+[data-theme="dark"] .field input:not(:placeholder-shown) + label,
+[data-theme="dark"] .field.has-value label{ color:var(--teal); }
+.field select{ padding-top:16px; cursor:pointer; }
+.field select + label{ top:6px; font-size:11px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; color:var(--teal-dark); }
+[data-theme="dark"] .field select + label{ color:var(--teal); }
+.field.select-field label{ position:static; display:block; margin-bottom:8px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-soft); }
+.field.select-field select{ padding:14px 16px; }
+.select-caret{ position:absolute; right:16px; top:44px; pointer-events:none; color:var(--text-soft); font-size:12px; }
+.field.select-field .select-caret{ top:16px; }
+
+/* ============================================================
+   5b. ROLE-BASED DYNAMIC FIELD SECTIONS (Create Account)
+   Purely additive — does not alter any existing field styling.
+============================================================ */
+.dynamic-section{
+  max-height:0; opacity:0; overflow:hidden; pointer-events:none;
+  transition: max-height 0.45s cubic-bezier(.22,1,.36,1), opacity 0.3s ease, margin var(--transition);
+}
+.dynamic-section.expanded{
+  max-height:600px; opacity:1; pointer-events:auto;
+}
+.field.select-field select:disabled{ cursor:not-allowed; opacity:0.6; }
+
+.field.valid input{ border-color:var(--teal); }
+.field.invalid input{ border-color:var(--rose); }
+.field-hint{ font-size:12px; margin-top:6px; min-height:16px; color:var(--text-soft); display:flex; align-items:center; gap:5px; }
+.field.invalid .field-hint{ color:var(--rose); }
+.field.valid .field-hint{ color:var(--teal-dark); }
+[data-theme="dark"] .field.valid .field-hint{ color:var(--teal); }
+
+.password-field{ position:relative; }
+.password-toggle{
+  position:absolute; right:14px; top:15px; font-size:16px; color:var(--text-soft);
+  transition:color var(--transition); z-index:2;
+}
+.password-toggle:hover{ color:var(--teal-dark); }
+
+.strength-meter{ display:flex; gap:5px; margin-top:8px; }
+.strength-bar{ flex:1; height:4px; border-radius:100px; background:var(--line); transition: background var(--transition); }
+.strength-meter[data-level="1"] .strength-bar:nth-child(1){ background:var(--rose); }
+.strength-meter[data-level="2"] .strength-bar:nth-child(-n+2){ background:var(--amber-dark); }
+.strength-meter[data-level="3"] .strength-bar:nth-child(-n+3){ background:var(--teal); }
+.strength-meter[data-level="4"] .strength-bar{ background:var(--teal-dark); }
+.strength-label{ font-size:11.5px; color:var(--text-soft); margin-top:6px; font-family:var(--font-mono); }
+
+.row-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+.field-row-inline{ display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+.checkbox-wrap{ display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--text-soft); cursor:pointer; }
+.checkbox-wrap input{ width:16px; height:16px; accent-color:var(--teal-dark); cursor:pointer; }
+.link-teal{ font-size:13.5px; font-weight:600; color:var(--teal-dark); transition:opacity var(--transition); }
+[data-theme="dark"] .link-teal{ color:var(--teal); }
+.link-teal:hover{ opacity:0.7; }
+
+/* OTP row */
+.otp-row{ display:flex; gap:10px; align-items:flex-end; margin-bottom:8px; }
+.otp-row .field{ flex:1; margin-bottom:0; }
+.otp-status{
+  display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--teal-dark);
+  margin:10px 0 6px; opacity:0; transform:translateY(-4px); transition: all var(--transition);
+}
+[data-theme="dark"] .otp-status{ color:var(--teal); }
+.otp-status.show{ opacity:1; transform:translateY(0); }
+.otp-check{
+  width:18px; height:18px; border-radius:50%; background:var(--teal-dark); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px;
+  animation: check-pop 0.4s cubic-bezier(.22,1,.36,1);
+}
+[data-theme="dark"] .otp-check{ background:var(--teal); color:#0D1220; }
+@keyframes check-pop{ from{ transform:scale(0); } to{ transform:scale(1); } }
+
+/* ============================================================
+   6. BUTTONS — identical to homepage, plus loading state
+============================================================ */
+.btn{
+  font-weight:600; font-size:14.5px; padding:11px 22px; border-radius:100px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  transition: transform var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition);
+  white-space:nowrap; position:relative; overflow:hidden;
+}
+.btn-primary{ background:var(--ink); color:var(--paper); box-shadow:var(--shadow-sm); }
+.btn-primary:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.btn-ghost{ color:var(--text); border:1px solid var(--line); }
+.btn-ghost:hover{ background:var(--paper-raised); border-color:var(--ink-soft); }
+.btn-accent{ background:var(--amber); color:#1B1300; box-shadow:var(--shadow-sm); }
+.btn-accent:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); background:var(--amber-dark); }
+.btn-block{ width:100%; padding:14px 22px; font-size:15px; margin-top:6px; }
+.btn-outline-sm{ padding:10px 16px; font-size:13px; border:1.5px solid var(--line); flex-shrink:0; }
+.btn-outline-sm:hover{ border-color:var(--teal-dark); color:var(--teal-dark); }
+[data-theme="dark"] .btn-outline-sm:hover{ color:var(--teal); }
+
+/* ripple */
+.btn .ripple{
+  position:absolute; border-radius:50%; background:rgba(255,255,255,0.5); transform:scale(0);
+  animation: ripple-anim 0.6s ease-out; pointer-events:none;
+}
+@keyframes ripple-anim{ to{ transform:scale(3); opacity:0; } }
+
+.btn.is-loading{ pointer-events:none; color:transparent; }
+.btn.is-loading::after{
+  content:''; position:absolute; width:18px; height:18px; border-radius:50%;
+  border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; left:50%; top:50%; margin:-9px 0 0 -9px;
+  animation:spin 0.7s linear infinite;
+}
+.btn-ghost.is-loading::after{ border:2px solid rgba(23,27,36,0.2); border-top-color:var(--ink); }
+
+.auth-switch{ text-align:center; margin-top:26px; font-size:14px; color:var(--text-soft); }
+
+/* success state */
+.success-state{ text-align:center; padding:20px 0 6px; display:none; }
+.success-state.show{ display:block; animation: panel-in 0.5s cubic-bezier(.22,1,.36,1); }
+.success-mark{
+  width:68px; height:68px; border-radius:50%; margin:0 auto 22px; display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--teal), var(--teal-dark)); box-shadow:var(--shadow-md);
+}
+.success-mark svg{ width:30px; height:30px; }
+.success-mark path{ stroke:#fff; stroke-width:3; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:36; stroke-dashoffset:36; animation: draw-check 0.5s 0.15s cubic-bezier(.22,1,.36,1) forwards; }
+@keyframes draw-check{ to{ stroke-dashoffset:0; } }
+.success-state h3{ font-size:20px; margin-bottom:8px; }
+.success-state p{ color:var(--text-soft); font-size:14px; }
+
+/* ============================================================
+   7. RESPONSIVE
+============================================================ */
+@media (max-width: 980px){
+  .auth-side{ display:none; }
+  .auth-main{ flex:1 1 100%; padding:150px 20px 50px; }
+}
+@media (max-width: 520px){
+  .auth-nav{ padding:18px 20px; }
+  .auth-card{ padding:32px 22px; border-radius:var(--radius-md); }
+  .row-2{ grid-template-columns:1fr; gap:0; }
+  .otp-row{ flex-direction:column; align-items:stretch; }
+  .otp-row .btn-outline-sm{ width:100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOADER
+============================================================ -->
+<div id="loader">
+  <div class="loader-mark"></div>
+  <div class="loader-text">Loading</div>
+</div>
+
+<!-- ============================================================
+     MINI NAV
+============================================================ -->
+<nav class="auth-nav">
+  <a href="/" class="brand">
+    <img class="brand-logo" src="procapSys logo.png" alt="ProCapSys" loading="lazy">
+  </a>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
+</nav>
+
+<!-- ============================================================
+     PAGE SHELL
+============================================================ -->
+<div class="auth-page">
+
+  <!-- LEFT — BRANDING SIDE (hidden below 980px) -->
+  <aside class="auth-side">
+    <div class="auth-side-grid"></div>
+    <div class="auth-blob blob-1"></div>
+    <div class="auth-blob blob-2"></div>
+    <div class="auth-side-content">
+      <span class="eyebrow">ProCapSys</span>
+      <h1>One account, <em>every</em> signal on your readiness.</h1>
+      <p>Sign in to track skills, assessments, and placement progress in one connected workspace built for students, trainers, and institutions.</p>
+      <div class="side-points">
+        <div class="side-point"><span class="side-point-mark">✓</span> Role-based dashboards for every stakeholder</div>
+        <div class="side-point"><span class="side-point-mark">✓</span> Verified institutional data, in real time</div>
+        <div class="side-point"><span class="side-point-mark">✓</span> One login across the whole platform</div>
+      </div>
+      <div class="side-illustration">
+        <div class="bar-row"><span class="label">Readiness</span><div class="bar-track"><div class="bar-fill" data-w="88" style="width:0"></div></div></div>
+        <div class="bar-row"><span class="label">Assessments</span><div class="bar-track"><div class="bar-fill" data-w="72" style="width:0"></div></div></div>
+        <div class="bar-row"><span class="label">Placement</span><div class="bar-track"><div class="bar-fill" data-w="64" style="width:0"></div></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT — AUTH CARD -->
+  <main class="auth-main">
+    <div class="auth-card" id="authCard">
+
+      <!-- ============================================================
+           LOGIN PANEL
+      ============================================================ -->
+      <section class="auth-panel active" id="panel-login">
+        <div class="auth-head">
+          <h2>ProCapSys Welcomes You</h2>
+          <p>Sign in to continue</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="field select-field">
+            <label for="loginRole">Role</label>
+            <select id="loginRole" required>
+              <option value="" disabled selected>Select your role</option>
+              <option value="super_admin">Super Admin</option>
+              <option value="knowledge_admin">College Admin</option>
+              <option value="trainer">Trainer</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <input type="email" id="loginEmail" placeholder=" " required>
+            <label for="loginEmail">Email address</label>
+            <div class="field-hint" id="loginEmailHint"></div>
+          </div>
+
+          <div class="field password-field">
+            <input type="password" id="loginPassword" placeholder=" " required>
+            <label for="loginPassword">Password</label>
+            <span class="password-toggle" data-target="loginPassword">👁</span>
+          </div>
+
+          <div class="field-row-inline">
+            <label class="checkbox-wrap">
+              <input type="checkbox" id="rememberMe">
+              Remember me
+            </label>
+            <a href="#" class="link-teal" data-goto="forgot">Forgot password?</a>
+          </div>
+
+          <!-- Login API connected: POST /api/auth/login -->
+          <button type="submit" class="btn btn-primary btn-block" id="loginSubmit">Sign in</button>
+        </form>
+
+        <p class="auth-switch">Don't have an account? <a href="#" class="link-teal" data-goto="register">Create account</a></p>
+      </section>
+
+      <!-- ============================================================
+           CREATE ACCOUNT PANEL
+      ============================================================ -->
+      <section class="auth-panel" id="panel-register">
+        <div class="auth-head">
+          <h2>Create new account</h2>
+          <p>Join the platform in a few quick steps</p>
+        </div>
+
+        <form id="registerForm" novalidate>
+          <div class="field">
+            <input type="text" id="regName" placeholder=" " required>
+            <label for="regName">Full name</label>
+          </div>
+
+          <div class="field select-field">
+            <label for="regRole">Role</label>
+            <select id="regRole" required>
+              <option value="" disabled selected>Select your role</option>
+              <option value="student">Student</option>
+              <option value="trainer">Trainer</option>
+              <option value="college_admin">College Admin</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <input type="email" id="regEmail" placeholder=" " required>
+            <label for="regEmail">Email address</label>
+            <div class="field-hint" id="regEmailHint"></div>
+          </div>
+
+          <!-- Email OTP simulation — no backend logic -->
+          <div class="otp-row">
+            <div class="field">
+              <input type="text" id="regOtp" maxlength="6" placeholder=" ">
+              <label for="regOtp">Email OTP</label>
+            </div>
+            <button type="button" class="btn btn-ghost btn-outline-sm" id="sendOtpBtn">Send OTP</button>
+            <button type="button" class="btn btn-accent btn-outline-sm" id="verifyOtpBtn">Verify</button>
+          </div>
+          <div class="otp-status" id="otpStatus"><span class="otp-check">✓</span> Email verified</div>
+
+          <div class="row-2">
+            <div class="field password-field">
+              <input type="password" id="regPassword" placeholder=" " required>
+              <label for="regPassword">Create password</label>
+              <span class="password-toggle" data-target="regPassword">👁</span>
+            </div>
+            <div class="field password-field">
+              <input type="password" id="regConfirm" placeholder=" " required>
+              <label for="regConfirm">Confirm password</label>
+              <span class="password-toggle" data-target="regConfirm">👁</span>
+            </div>
+          </div>
+          <div class="strength-meter" id="strengthMeter" data-level="0">
+            <div class="strength-bar"></div><div class="strength-bar"></div><div class="strength-bar"></div><div class="strength-bar"></div>
+          </div>
+          <div class="strength-label" id="strengthLabel">Password strength</div>
+          <div class="field-hint" id="matchHint" style="margin-bottom:22px;"></div>
+
+          <div class="field">
+            <input type="tel" id="regMobile" placeholder=" " maxlength="10" required>
+            <label for="regMobile">Mobile number</label>
+            <div class="field-hint" id="mobileHint"></div>
+          </div>
+
+          <!-- ============================================================
+               ROLE-SPECIFIC — STUDENT ONLY
+               College + Department are populated at runtime via
+               populateCollegeDropdown()/populateDepartmentDropdown().
+               No hardcoded options here — HTML structure is stable so
+               GET /api/public/colleges and
+               GET /api/public/colleges/:id/departments can be wired in
+               later without touching this markup.
+          ============================================================ -->
+          <div class="dynamic-section" id="studentCollegeFields" data-role-section="student">
+            <div class="field select-field">
+              <label for="regCollege">College name</label>
+              <select id="regCollege">
+                <option value="" disabled selected>Select college</option>
+              </select>
+            </div>
+
+            <div class="field select-field">
+              <label for="regDepartment">Department</label>
+              <select id="regDepartment" disabled>
+                <option value="" disabled selected>Select a college first</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ============================================================
+               ROLE-SPECIFIC — COLLEGE ADMIN ONLY
+               Same live dropdown, populated by the same
+               populateCollegeDropdown()/fetchColleges() used above —
+               no separate/hardcoded college list for this role.
+          ============================================================ -->
+          <div class="dynamic-section" id="collegeAdminCollegeFields" data-role-section="college_admin">
+            <div class="field select-field">
+              <label for="regCollegeAdminCollege">College name</label>
+              <select id="regCollegeAdminCollege">
+                <option value="" disabled selected>Select college</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic ID field — label/placeholder swap based on selected role -->
+          <div class="field">
+            <input type="text" id="regIdField" placeholder=" " required>
+            <label for="regIdField" id="regIdLabel">Roll number</label>
+          </div>
+
+          <!-- Register API connected: POST /api/auth/register -->
+          <!-- OTP verify connected: POST /api/auth/verify-otp -->
+          <button type="submit" class="btn btn-primary btn-block" id="registerSubmit">Create account</button>
+        </form>
+
+        <p class="auth-switch">Already have an account? <a href="#" class="link-teal" data-goto="login">Login</a></p>
+      </section>
+
+      <!-- ============================================================
+           FORGOT PASSWORD PANEL
+      ============================================================ -->
+      <section class="auth-panel" id="panel-forgot">
+        <div id="forgotFormWrap">
+          <div class="auth-head">
+            <h2>Reset password</h2>
+            <p>We'll send a code to verify it's you</p>
+          </div>
+
+          <form id="forgotForm" novalidate>
+            <div class="otp-row">
+              <div class="field">
+                <input type="email" id="fpEmail" placeholder=" " required>
+                <label for="fpEmail">Email address</label>
+              </div>
+              <button type="button" class="btn btn-ghost btn-outline-sm" id="fpSendOtp">Send OTP</button>
+            </div>
+
+            <div class="otp-row">
+              <div class="field">
+                <input type="text" id="fpOtp" maxlength="6" placeholder=" ">
+                <label for="fpOtp">Enter OTP</label>
+              </div>
+              <button type="button" class="btn btn-accent btn-outline-sm" id="fpVerifyOtp">Verify</button>
+            </div>
+            <div class="otp-status" id="fpOtpStatus"><span class="otp-check">✓</span> Code verified</div>
+
+            <div class="field password-field" style="margin-top:22px;">
+              <input type="password" id="fpNewPassword" placeholder=" " required>
+              <label for="fpNewPassword">New password</label>
+              <span class="password-toggle" data-target="fpNewPassword">👁</span>
+            </div>
+            <div class="field password-field">
+              <input type="password" id="fpConfirmPassword" placeholder=" " required>
+              <label for="fpConfirmPassword">Confirm password</label>
+              <span class="password-toggle" data-target="fpConfirmPassword">👁</span>
+            </div>
+            <div class="field-hint" id="fpMatchHint" style="margin-bottom:6px;"></div>
+
+            <!-- Reset Password API connected: POST /api/auth/reset-password -->
+            <button type="submit" class="btn btn-primary btn-block" id="fpSubmit">Submit</button>
+          </form>
+
+          <p class="auth-switch"><a href="#" class="link-teal" data-goto="login">← Back to login</a></p>
+        </div>
+
+        <!-- Success state, shown after submit, then auto-redirects to Login -->
+        <div class="success-state" id="fpSuccess">
+          <div class="success-mark"><svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6"/></svg></div>
+          <h3>Password updated successfully</h3>
+          <p>Redirecting you to sign in…</p>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           FIRST-LOGIN VERIFICATION PANEL
+           Shown when an account was created directly by the Super Admin
+           (POST /api/admin/trainers) and login() returns
+           requiresFirstLoginVerification. No session is issued until the
+           user sets their own password AND confirms it with an OTP
+           (POST /api/auth/complete-first-login).
+      ============================================================ -->
+      <section class="auth-panel" id="panel-first-login">
+        <div id="firstLoginFormWrap">
+          <div class="auth-head">
+            <h2>Verify your account</h2>
+            <p>Set your own password and confirm it with a code</p>
+          </div>
+
+          <form id="firstLoginForm" novalidate>
+            <div class="field has-value">
+              <input type="email" id="flEmail" readonly value=" ">
+              <label for="flEmail">Account email</label>
+            </div>
+
+            <div class="otp-row" style="margin-top:16px;">
+              <div class="field">
+                <input type="text" id="flOtp" maxlength="6" placeholder=" ">
+                <label for="flOtp">Email OTP</label>
+              </div>
+              <button type="button" class="btn btn-ghost btn-outline-sm" id="flSendOtp">Send OTP</button>
+              <button type="button" class="btn btn-accent btn-outline-sm" id="flVerifyOtp">Verify</button>
+            </div>
+            <div class="otp-status" id="flOtpStatus"><span class="otp-check">✓</span> Code verified</div>
+
+            <div class="field password-field" style="margin-top:22px;">
+              <input type="password" id="flNewPassword" placeholder=" " required>
+              <label for="flNewPassword">New password</label>
+              <span class="password-toggle" data-target="flNewPassword">👁</span>
+            </div>
+            <div class="field password-field">
+              <input type="password" id="flConfirmPassword" placeholder=" " required>
+              <label for="flConfirmPassword">Confirm password</label>
+              <span class="password-toggle" data-target="flConfirmPassword">👁</span>
+            </div>
+            <div class="field-hint" id="flMatchHint" style="margin-bottom:6px;"></div>
+            <div class="field-hint" style="margin-bottom:14px;">Min 8 characters with an uppercase letter, a lowercase letter, a number, and a special character.</div>
+
+            <!-- First-login verification API connected: POST /api/auth/complete-first-login -->
+            <button type="submit" class="btn btn-primary btn-block" id="flSubmit">Verify &amp; Continue</button>
+          </form>
+
+          <p class="auth-switch"><a href="#" class="link-teal" data-goto="login">← Back to login</a></p>
+        </div>
+
+        <!-- Success state, shown after submit, then auto-redirects to the dashboard -->
+        <div class="success-state" id="flSuccess">
+          <div class="success-mark"><svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6"/></svg></div>
+          <h3>Account verified</h3>
+          <p>Redirecting you to the dashboard…</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   JS — 1. LOADER
+============================================================ */
+window.addEventListener('load', () => {
+  const loader = document.getElementById('loader');
+  setTimeout(() => loader.classList.add('hidden'), 500);
+  document.querySelectorAll('.side-illustration .bar-fill').forEach(bar => {
+    setTimeout(() => { bar.style.width = bar.dataset.w + '%'; }, 700);
+  });
+});
+
+/* ============================================================
+   JS — 2. THEME TOGGLE (same behavior as homepage)
+============================================================ */
+const themeToggle = document.getElementById('themeToggle');
+const root = document.documentElement;
+function applyTheme(t){
+  root.setAttribute('data-theme', t);
+  themeToggle.textContent = t === 'dark' ? '☀️' : '🌙';
+}
+applyTheme('light');
+themeToggle.addEventListener('click', () => {
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+});
+
+/* ============================================================
+   JS — 3. PANEL SWITCHER (Login ↔ Create Account ↔ Forgot ↔ First-login verify)
+============================================================ */
+const panels = {
+  login: document.getElementById('panel-login'),
+  register: document.getElementById('panel-register'),
+  forgot: document.getElementById('panel-forgot'),
+  'first-login': document.getElementById('panel-first-login')
+};
+function switchPanel(name){
+  const current = document.querySelector('.auth-panel.active');
+  const next = panels[name];
+  if (!next || next === current) return;
+  current.classList.add('leaving');
+  setTimeout(() => {
+    current.classList.remove('active', 'leaving');
+    next.classList.add('active');
+  }, 260);
+}
+document.querySelectorAll('[data-goto]').forEach(el => {
+  el.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchPanel(el.dataset.goto);
+  });
+});
+
+/* ============================================================
+   JS — 4. PASSWORD VISIBILITY TOGGLE
+============================================================ */
+document.querySelectorAll('.password-toggle').forEach(toggle => {
+  toggle.addEventListener('click', () => {
+    const input = document.getElementById(toggle.dataset.target);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    toggle.textContent = isHidden ? '🙈' : '👁';
+  });
+});
+
+/* ============================================================
+   JS — 5. BUTTON RIPPLE
+============================================================ */
+document.querySelectorAll('.btn').forEach(btn => {
+  btn.addEventListener('click', function(e){
+    const rect = this.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    const size = Math.max(rect.width, rect.height);
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+    this.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  });
+});
+
+/* ============================================================
+   JS — API INTEGRATION HELPERS
+   (Backend wiring only — no styling/markup changes below)
+============================================================ */
+const API_BASE = '/api/auth';
+
+// One shared inline alert per panel, injected at runtime so no
+// existing HTML/CSS has to change. Reuses the design tokens already
+// defined in :root (--rose for errors, --teal-dark for success).
+function ensureFormAlert(panelId){
+  let el = document.getElementById(panelId + 'FormAlert');
+  if (!el){
+    el = document.createElement('div');
+    el.id = panelId + 'FormAlert';
+    el.style.cssText = 'display:none;margin-bottom:18px;padding:11px 14px;border-radius:8px;font-size:13.5px;font-weight:500;';
+    const head = document.querySelector('#panel-' + panelId + ' .auth-head');
+    head.insertAdjacentElement('afterend', el);
+  }
+  return el;
+}
+function showFormAlert(panelId, message, type){
+  const el = ensureFormAlert(panelId);
+  el.textContent = message;
+  el.style.display = 'block';
+  if (type === 'success'){
+    el.style.background = 'rgba(31,158,147,0.12)';
+    el.style.color = 'var(--teal-dark)';
+  } else {
+    el.style.background = 'rgba(228,87,61,0.12)';
+    el.style.color = 'var(--rose)';
+  }
+}
+function hideFormAlert(panelId){
+  const el = document.getElementById(panelId + 'FormAlert');
+  if (el) el.style.display = 'none';
+}
+
+/* ============================================================
+   JS — SESSION-REPLACED NOTICE
+   If the dashboard's session guard (see student.html / trainer.html /
+   super_admin.html / college_admin.html) redirected here because this
+   account was logged in from another device, surface that message on
+   the login panel using the same alert UI as everything else above.
+   No page redesign — just reads a one-time flag and clears it so a
+   manual refresh of login.html doesn't keep re-showing it.
+============================================================ */
+(function showSessionReplacedNoticeIfAny(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const stored = sessionStorage.getItem('eip_session_message');
+    if (params.get('sessionExpired') === '1' || stored) {
+      showFormAlert('login', stored || 'Your account has been logged in on another device.');
+      sessionStorage.removeItem('eip_session_message');
+      if (params.has('sessionExpired')) {
+        params.delete('sessionExpired');
+        const qs = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+      }
+    }
+  } catch (e) { /* sessionStorage unavailable — silently skip the notice */ }
+})();
+
+async function apiRequest(path, body){
+  let res, data;
+  try {
+    res = await fetch(API_BASE + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body || {})
+    });
+    data = await res.json();
+  } catch (err) {
+    return { ok: false, status: 0, data: { message: 'Could not reach the server. Please try again.' } };
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function apiGet(path){
+  let res, data;
+  try {
+    res = await fetch(API_BASE + path, { method: 'GET', credentials: 'include' });
+    data = await res.json();
+  } catch (err) {
+    return { ok: false, status: 0, data: { message: 'Could not reach the server.' } };
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
+// Root-level GET — colleges/departments live at /api/public/... , not under
+// /api/auth like everything else on this page. Same shape as apiGet() above.
+const API_ROOT = '/api';
+async function apiGetRoot(path){
+  let res, data;
+  try {
+    res = await fetch(API_ROOT + path, { method: 'GET', credentials: 'include' });
+    data = await res.json();
+  } catch (err) {
+    return { ok: false, status: 0, data: { message: 'Could not reach the server.' } };
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
+// Tokens returned by /verify-otp — required by /register and /reset-password.
+let regOtpToken = null;
+let fpOtpToken = null;
+
+/* ============================================================
+   JS — 6. EMAIL VALIDATION UI (Login + Register)
+============================================================ */
+function validateEmailField(inputId, hintId){
+  const input = document.getElementById(inputId);
+  const hint = document.getElementById(hintId);
+  const field = input.closest('.field');
+  input.addEventListener('input', () => {
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value);
+    field.classList.remove('valid', 'invalid');
+    if (input.value.length === 0){ hint.textContent = ''; return; }
+    if (ok){ field.classList.add('valid'); hint.textContent = '✓ Looks good'; }
+    else { field.classList.add('invalid'); hint.textContent = 'Enter a valid email address'; }
+  });
+}
+validateEmailField('loginEmail', 'loginEmailHint');
+validateEmailField('regEmail', 'regEmailHint');
+
+/* ============================================================
+   JS — 7. MOBILE NUMBER VALIDATION UI
+============================================================ */
+const regMobile = document.getElementById('regMobile');
+const mobileHint = document.getElementById('mobileHint');
+regMobile.addEventListener('input', () => {
+  regMobile.value = regMobile.value.replace(/\D/g, '').slice(0, 10);
+  const field = regMobile.closest('.field');
+  field.classList.remove('valid', 'invalid');
+  if (regMobile.value.length === 0){ mobileHint.textContent = ''; return; }
+  if (regMobile.value.length === 10){ field.classList.add('valid'); mobileHint.textContent = '✓ Valid mobile number'; }
+  else { field.classList.add('invalid'); mobileHint.textContent = `${10 - regMobile.value.length} digit(s) remaining`; }
+});
+
+/* ============================================================
+   JS — 8. PASSWORD STRENGTH + MATCH INDICATOR (Register)
+============================================================ */
+const regPassword = document.getElementById('regPassword');
+const regConfirm = document.getElementById('regConfirm');
+const strengthMeter = document.getElementById('strengthMeter');
+const strengthLabel = document.getElementById('strengthLabel');
+const matchHint = document.getElementById('matchHint');
+
+function scorePassword(pw){
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return score;
+}
+const strengthLabels = ['Password strength', 'Weak', 'Fair', 'Good', 'Strong'];
+regPassword.addEventListener('input', () => {
+  const score = regPassword.value.length ? scorePassword(regPassword.value) || 1 : 0;
+  strengthMeter.dataset.level = score;
+  strengthLabel.textContent = strengthLabels[score];
+  checkMatch();
+});
+regConfirm.addEventListener('input', checkMatch);
+function checkMatch(){
+  const confirmField = regConfirm.closest('.field');
+  confirmField.classList.remove('valid', 'invalid');
+  if (!regConfirm.value){ matchHint.textContent = ''; return; }
+  if (regConfirm.value === regPassword.value){ confirmField.classList.add('valid'); matchHint.textContent = '✓ Passwords match'; matchHint.style.color = ''; }
+  else { confirmField.classList.add('invalid'); matchHint.textContent = 'Passwords do not match'; }
+}
+
+/* Forgot-password panel: same match check, separate fields */
+const fpNewPassword = document.getElementById('fpNewPassword');
+const fpConfirmPassword = document.getElementById('fpConfirmPassword');
+const fpMatchHint = document.getElementById('fpMatchHint');
+function checkFpMatch(){
+  const field = fpConfirmPassword.closest('.field');
+  field.classList.remove('valid', 'invalid');
+  if (!fpConfirmPassword.value){ fpMatchHint.textContent = ''; return; }
+  if (fpConfirmPassword.value === fpNewPassword.value){ field.classList.add('valid'); fpMatchHint.textContent = '✓ Passwords match'; }
+  else { field.classList.add('invalid'); fpMatchHint.textContent = 'Passwords do not match'; }
+}
+fpNewPassword.addEventListener('input', checkFpMatch);
+fpConfirmPassword.addEventListener('input', checkFpMatch);
+
+/* ============================================================
+   JS — 9. DYNAMIC ID FIELD (Roll No / Employee ID / Counselling Code)
+============================================================ */
+const regRole = document.getElementById('regRole');
+const regIdLabel = document.getElementById('regIdLabel');
+const regIdField = document.getElementById('regIdField');
+const idConfig = {
+  student:       { label: 'Roll number',            placeholder: 'Enter roll number' },
+  trainer:       { label: 'Employee ID',             placeholder: 'Enter employee ID' },
+  college_admin: { label: 'TNEA counselling code',   placeholder: 'Enter counselling code' }
+};
+regRole.addEventListener('change', () => {
+  const cfg = idConfig[regRole.value] || idConfig.student;
+  regIdLabel.textContent = cfg.label;
+  regIdField.setAttribute('placeholder', ' ');
+  regIdField.value = '';
+  regIdField.dataset.placeholderText = cfg.placeholder;
+});
+
+/* ============================================================
+   JS — 9b. ROLE-BASED DYNAMIC SECTIONS (Student / Trainer / College Admin)
+   Only Student needs College + Department. Both dropdowns are rendered
+   exclusively from data returned by fetchColleges()/fetchDepartments(),
+   which call the real GET /api/public/colleges(...) endpoints below —
+   no options are hardcoded in HTML or JS, and the dropdown stays empty
+   until the backend actually responds.
+============================================================ */
+const NO_COLLEGES_TEXT = 'No colleges available';
+const NO_DEPARTMENTS_TEXT = 'No departments available';
+
+const regCollege = document.getElementById('regCollege');
+const regDepartment = document.getElementById('regDepartment');
+const studentCollegeFields = document.getElementById('studentCollegeFields');
+const regCollegeAdminCollege = document.getElementById('regCollegeAdminCollege');
+const collegeAdminCollegeFields = document.getElementById('collegeAdminCollegeFields');
+
+const ROLE_SECTIONS = {
+  student: ['studentCollegeFields'],
+  college_admin: ['collegeAdminCollegeFields']
+};
+
+let collegesLoaded = false;
+
+// Reusable renderer — used by both the College and Department dropdowns.
+function populateDropdown(selectEl, items, labelKey, valueKey, placeholderText, emptyText){
+  selectEl.innerHTML = '';
+  const opt = document.createElement('option');
+  opt.value = '';
+  opt.disabled = true;
+  opt.selected = true;
+  if (!items || items.length === 0){
+    opt.textContent = emptyText;
+    selectEl.appendChild(opt);
+    return;
+  }
+  opt.textContent = placeholderText;
+  selectEl.appendChild(opt);
+  items.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item[valueKey];
+    option.textContent = item[labelKey];
+    selectEl.appendChild(option);
+  });
+}
+
+function populateCollegeDropdown(colleges){
+  populateDropdown(regCollege, colleges, 'college_name', '_id', 'Select college', NO_COLLEGES_TEXT);
+  populateDropdown(regCollegeAdminCollege, colleges, 'college_name', '_id', 'Select college', NO_COLLEGES_TEXT);
+}
+
+function populateDepartmentDropdown(departments){
+  populateDropdown(regDepartment, departments, 'department_name', '_id', 'Select department', NO_DEPARTMENTS_TEXT);
+  regDepartment.disabled = !departments || departments.length === 0;
+}
+
+// ---- Real backend calls — no hardcoded/mock data. ------------------------
+// GET /api/public/colleges returns [{ _id, college_name, status }], filtered
+// to active colleges only by the backend. Same shapes populateDropdown()
+// already expects, so no markup/JS below this needed to change.
+async function fetchColleges(){
+  const { ok, data } = await apiGetRoot('/public/colleges');
+  return ok && Array.isArray(data.colleges) ? data.colleges : [];
+}
+
+async function fetchDepartments(collegeId){
+  const { ok, data } = await apiGetRoot(`/public/colleges/${collegeId}/departments`);
+  return ok && Array.isArray(data.departments) ? data.departments : [];
+}
+
+async function loadColleges(){
+  if (collegesLoaded) return;
+  const colleges = await fetchColleges();
+  populateCollegeDropdown(colleges);
+  collegesLoaded = true;
+}
+
+regCollege.addEventListener('change', async () => {
+  regDepartment.disabled = true;
+  populateDepartmentDropdown([]);
+  if (!regCollege.value) return;
+  const departments = await fetchDepartments(regCollege.value);
+  populateDepartmentDropdown(departments);
+});
+
+function toggleDynamicSection(sectionEl, show){
+  sectionEl.classList.toggle('expanded', show);
+  sectionEl.querySelectorAll('select').forEach(sel => {
+    sel.required = show;
+    sel.disabled = sel === regDepartment ? (!show || !regCollege.value) : !show;
+  });
+  if (!show){
+    sectionEl.querySelectorAll('select').forEach(sel => { sel.value = ''; });
+  }
+}
+
+function updateRoleSections(role){
+  const activeSections = ROLE_SECTIONS[role] || [];
+  toggleDynamicSection(studentCollegeFields, activeSections.includes('studentCollegeFields'));
+  toggleDynamicSection(collegeAdminCollegeFields, activeSections.includes('collegeAdminCollegeFields'));
+  if (role === 'student' || role === 'college_admin') loadColleges();
+}
+
+regRole.addEventListener('change', () => updateRoleSections(regRole.value));
+
+/* ============================================================
+   JS — 10. EMAIL OTP (Create Account) — wired to /api/auth
+============================================================ */
+const sendOtpBtn = document.getElementById('sendOtpBtn');
+const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+const regOtp = document.getElementById('regOtp');
+const otpStatus = document.getElementById('otpStatus');
+sendOtpBtn.addEventListener('click', async () => {
+  hideFormAlert('register');
+  const email = document.getElementById('regEmail').value.trim();
+  if (!email){ showFormAlert('register', 'Enter your email address first.'); return; }
+  sendOtpBtn.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/send-otp', { email, purpose: 'register' });
+  sendOtpBtn.classList.remove('is-loading');
+  if (ok){ sendOtpBtn.textContent = 'Resend OTP'; showFormAlert('register', 'OTP sent to your email.', 'success'); }
+  else { showFormAlert('register', data.message || 'Could not send OTP.'); }
+});
+verifyOtpBtn.addEventListener('click', async () => {
+  hideFormAlert('register');
+  const email = document.getElementById('regEmail').value.trim();
+  if (regOtp.value.trim().length < 4) return;
+  verifyOtpBtn.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/verify-otp', { email, purpose: 'register', otp: regOtp.value.trim() });
+  verifyOtpBtn.classList.remove('is-loading');
+  if (ok){
+    regOtpToken = data.otpToken;
+    otpStatus.classList.add('show');
+  } else {
+    showFormAlert('register', data.message || 'Incorrect OTP.');
+  }
+});
+
+/* ============================================================
+   JS — 11. EMAIL OTP (Forgot Password) — wired to /api/auth
+============================================================ */
+const fpSendOtp = document.getElementById('fpSendOtp');
+const fpVerifyOtp = document.getElementById('fpVerifyOtp');
+const fpOtp = document.getElementById('fpOtp');
+const fpOtpStatus = document.getElementById('fpOtpStatus');
+fpSendOtp.addEventListener('click', async () => {
+  hideFormAlert('forgot');
+  const email = document.getElementById('fpEmail').value.trim();
+  if (!email){ showFormAlert('forgot', 'Enter your email address first.'); return; }
+  fpSendOtp.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/forgot-password', { email });
+  fpSendOtp.classList.remove('is-loading');
+  if (ok){ fpSendOtp.textContent = 'Resend OTP'; showFormAlert('forgot', 'OTP sent to your email.', 'success'); }
+  else { showFormAlert('forgot', data.message || 'Could not send OTP.'); }
+});
+fpVerifyOtp.addEventListener('click', async () => {
+  hideFormAlert('forgot');
+  const email = document.getElementById('fpEmail').value.trim();
+  if (fpOtp.value.trim().length < 4) return;
+  fpVerifyOtp.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/verify-otp', { email, purpose: 'forgot', otp: fpOtp.value.trim() });
+  fpVerifyOtp.classList.remove('is-loading');
+  if (ok){
+    fpOtpToken = data.otpToken;
+    fpOtpStatus.classList.add('show');
+  } else {
+    showFormAlert('forgot', data.message || 'Incorrect OTP.');
+  }
+});
+
+/* ============================================================
+   JS — 11b. FIRST-LOGIN VERIFICATION (Super Admin-created accounts)
+   Wired to /api/auth with OTP purpose "first_login". The email is
+   fixed (taken from the login response, shown read-only); the user
+   sets their own password and confirms it with an OTP before any
+   session is issued (POST /complete-first-login).
+============================================================ */
+let flEmail = null;
+let flOtpToken = null;
+const flSendOtp = document.getElementById('flSendOtp');
+const flVerifyOtp = document.getElementById('flVerifyOtp');
+const flOtp = document.getElementById('flOtp');
+const flOtpStatus = document.getElementById('flOtpStatus');
+const flNewPassword = document.getElementById('flNewPassword');
+const flConfirmPassword = document.getElementById('flConfirmPassword');
+const flMatchHint = document.getElementById('flMatchHint');
+function checkFlMatch(){
+  const field = flConfirmPassword.closest('.field');
+  field.classList.remove('valid', 'invalid');
+  if (!flConfirmPassword.value){ flMatchHint.textContent = ''; return; }
+  if (flConfirmPassword.value === flNewPassword.value){ field.classList.add('valid'); flMatchHint.textContent = '✓ Passwords match'; }
+  else { field.classList.add('invalid'); flMatchHint.textContent = 'Passwords do not match'; }
+}
+flNewPassword.addEventListener('input', checkFlMatch);
+flConfirmPassword.addEventListener('input', checkFlMatch);
+flSendOtp.addEventListener('click', async () => {
+  hideFormAlert('first-login');
+  if (!flEmail){ showFormAlert('first-login', 'Account email is missing. Please log in again.'); return; }
+  flSendOtp.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/send-otp', { email: flEmail, purpose: 'first_login' });
+  flSendOtp.classList.remove('is-loading');
+  if (ok){ flSendOtp.textContent = 'Resend OTP'; showFormAlert('first-login', 'OTP sent to your email.', 'success'); }
+  else { showFormAlert('first-login', data.message || 'Could not send OTP.'); }
+});
+flVerifyOtp.addEventListener('click', async () => {
+  hideFormAlert('first-login');
+  if (!flEmail){ showFormAlert('first-login', 'Account email is missing. Please log in again.'); return; }
+  if (flOtp.value.trim().length < 4) return;
+  flVerifyOtp.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/verify-otp', { email: flEmail, purpose: 'first_login', otp: flOtp.value.trim() });
+  flVerifyOtp.classList.remove('is-loading');
+  if (ok){
+    flOtpToken = data.otpToken;
+    flOtpStatus.classList.add('show');
+  } else {
+    showFormAlert('first-login', data.message || 'Incorrect OTP.');
+  }
+});
+
+/* ============================================================
+   JS — 12. FORM SUBMIT HANDLERS — wired to /api/auth
+============================================================ */
+// Login
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideFormAlert('login');
+  const btn = document.getElementById('loginSubmit');
+  const role = document.getElementById('loginRole').value;
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  btn.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/login', { role, email, password });
+  btn.classList.remove('is-loading');
+
+  if (ok && data.requiresFirstLoginVerification){
+    // Account created by the Super Admin — no session issued yet.
+    // Switch to the first-login verification panel to set a password
+    // and confirm it with an OTP (POST /complete-first-login).
+    flEmail = data.email || email;
+    flOtpToken = null;
+    document.getElementById('firstLoginForm').reset();
+    flOtpStatus.classList.remove('show');
+    flSendOtp.textContent = 'Send OTP';
+    document.getElementById('flEmail').value = flEmail;
+    switchPanel('first-login');
+    return;
+  }
+
+  if (ok && data.redirect){
+    window.location.href = data.redirect;
+  } else {
+    showFormAlert('login', data.message || 'Login failed. Please try again.');
+  }
+});
+
+// First-login verification
+document.getElementById('firstLoginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideFormAlert('first-login');
+  const btn = document.getElementById('flSubmit');
+
+  if (!flEmail){ showFormAlert('first-login', 'Account email is missing. Please log in again.'); return; }
+  if (!flOtpToken){ showFormAlert('first-login', 'Please verify the OTP sent to your email first.'); return; }
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(flNewPassword.value)){
+    showFormAlert('first-login', 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.');
+    return;
+  }
+  if (flNewPassword.value !== flConfirmPassword.value){
+    showFormAlert('first-login', 'Passwords do not match.');
+    return;
+  }
+
+  const payload = {
+    email: flEmail,
+    newPassword: flNewPassword.value,
+    confirmPassword: flConfirmPassword.value,
+    otpToken: flOtpToken
+  };
+
+  btn.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/complete-first-login', payload);
+  btn.classList.remove('is-loading');
+
+  if (!ok){
+    flOtpToken = null;
+    flOtpStatus.classList.remove('show');
+    showFormAlert('first-login', data.message || 'Could not verify your account. Please try again.');
+    return;
+  }
+
+  flOtpToken = null;
+  document.getElementById('firstLoginFormWrap').style.display = 'none';
+  document.getElementById('flSuccess').classList.add('show');
+  setTimeout(() => {
+    window.location.href = data.redirect || 'trainer.html';
+  }, 1600);
+});
+
+// Create account
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideFormAlert('register');
+  const btn = document.getElementById('registerSubmit');
+
+  if (!regOtpToken){
+    showFormAlert('register', 'Please verify your email OTP before creating the account.');
+    return;
+  }
+
+  const payload = {
+    fullName: document.getElementById('regName').value.trim(),
+    role: regRole.value,
+    email: document.getElementById('regEmail').value.trim(),
+    password: regPassword.value,
+    confirmPassword: regConfirm.value,
+    mobile: document.getElementById('regMobile').value.trim(),
+    idValue: document.getElementById('regIdField').value.trim(),
+    otpToken: regOtpToken
+  };
+
+  // College / Department only apply to the Student role. regCollege/regDepartment
+  // values are the real MongoDB _ids returned by /api/public/colleges(...).
+  if (regRole.value === 'student'){
+    payload.collegeId = regCollege.value;
+    payload.departmentId = regDepartment.value;
+  } else if (regRole.value === 'college_admin'){
+    payload.collegeId = regCollegeAdminCollege.value;
+  }
+
+  btn.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/register', payload);
+  btn.classList.remove('is-loading');
+
+  if (ok){
+    regOtpToken = null;
+    showFormAlert('login', data.message || 'Account created. Waiting for approval.', 'success');
+    document.getElementById('registerForm').reset();
+    otpStatus.classList.remove('show');
+    sendOtpBtn.textContent = 'Send OTP';
+    updateRoleSections('');
+    collegesLoaded = false;
+    switchPanel('login');
+  } else {
+    showFormAlert('register', data.message || 'Could not create account.');
+  }
+});
+
+// Reset password
+document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideFormAlert('forgot');
+  const btn = document.getElementById('fpSubmit');
+
+  if (!fpOtpToken){
+    showFormAlert('forgot', 'Please verify the OTP sent to your email first.');
+    return;
+  }
+
+  const payload = {
+    email: document.getElementById('fpEmail').value.trim(),
+    newPassword: fpNewPassword.value,
+    confirmPassword: fpConfirmPassword.value,
+    otpToken: fpOtpToken
+  };
+
+  btn.classList.add('is-loading');
+  const { ok, data } = await apiRequest('/reset-password', payload);
+  btn.classList.remove('is-loading');
+
+  if (!ok){
+    showFormAlert('forgot', data.message || 'Could not reset password.');
+    return;
+  }
+
+  fpOtpToken = null;
+  document.getElementById('forgotFormWrap').style.display = 'none';
+  document.getElementById('fpSuccess').classList.add('show');
+  setTimeout(() => {
+    document.getElementById('fpSuccess').classList.remove('show');
+    document.getElementById('forgotFormWrap').style.display = '';
+    // reset forgot-password panel state for next use
+    document.getElementById('forgotForm').reset();
+    fpOtpStatus.classList.remove('show');
+    fpSendOtp.textContent = 'Send OTP';
+    switchPanel('login');
+  }, 2200);
+});
+</script>
+</body>
+</html>
